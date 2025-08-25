@@ -1,26 +1,14 @@
 import 'revolut_sdk_bridge_platform_interface.dart';
 
+export 'revolut_sdk_bridge_method_channel.dart';
+export 'revolut_sdk_bridge_platform_interface.dart';
+export 'services/revolut_logger.dart';
+export 'widgets/revolut_pay_button.dart';
+
 /// Main class for the Revolut SDK Bridge plugin
 /// This plugin integrates with the Revolut Pay SDK for iOS
 /// and provides a bridge for accepting Revolut Pay payments in Flutter apps
 class RevolutSdkBridge {
-  /// Create a payment (legacy - not applicable for Revolut Pay SDK)
-  static Future<Map<String, dynamic>?> createPayment({
-    required String accountId,
-    required String recipientAccountId,
-    required double amount,
-    required String currency,
-    String? reference,
-  }) {
-    return RevolutSdkBridgePlatform.instance.createPayment(
-      accountId: accountId,
-      recipientAccountId: recipientAccountId,
-      amount: amount,
-      currency: currency,
-      reference: reference,
-    );
-  }
-
   /// Create a Revolut Pay button for payment processing
   ///
   /// [orderToken] - The order token obtained from your server after creating an order
@@ -49,63 +37,9 @@ class RevolutSdkBridge {
     );
   }
 
-  /// Get account details (legacy - not applicable for Revolut Pay SDK)
-  static Future<Map<String, dynamic>?> getAccountDetails(String accountId) {
-    return RevolutSdkBridgePlatform.instance.getAccountDetails(accountId);
-  }
-
-  /// Get account transactions (legacy - not applicable for Revolut Pay SDK)
-  static Future<List<Map<String, dynamic>>?> getAccountTransactions(
-    String accountId, {
-    DateTime? from,
-    DateTime? to,
-    int? limit,
-  }) {
-    return RevolutSdkBridgePlatform.instance.getAccountTransactions(
-      accountId,
-      from: from,
-      to: to,
-      limit: limit,
-    );
-  }
-
-  // Legacy methods - kept for backward compatibility but not fully implemented
-  // These would need to be implemented differently for Revolut Pay use cases
-
-  /// Get exchange rates (legacy - not applicable for Revolut Pay SDK)
-  static Future<Map<String, dynamic>?> getExchangeRates({
-    String? fromCurrency,
-    String? toCurrency,
-  }) {
-    return RevolutSdkBridgePlatform.instance.getExchangeRates(
-      fromCurrency: fromCurrency,
-      toCurrency: toCurrency,
-    );
-  }
-
-  /// Get payment status (legacy - not applicable for Revolut Pay SDK)
-  static Future<Map<String, dynamic>?> getPaymentStatus(String paymentId) {
-    return RevolutSdkBridgePlatform.instance.getPaymentStatus(paymentId);
-  }
-
   /// Get platform version (for debugging)
   static Future<String?> getPlatformVersion() {
     return RevolutSdkBridgePlatform.instance.getPlatformVersion();
-  }
-
-  /// Get user accounts (legacy - not applicable for Revolut Pay SDK)
-  static Future<List<Map<String, dynamic>>?> getUserAccounts() {
-    return RevolutSdkBridgePlatform.instance.getUserAccounts();
-  }
-
-  /// Get user profile information (legacy - not applicable for Revolut Pay SDK)
-  static Future<Map<String, dynamic>?> getUserProfile() {
-    return RevolutSdkBridgePlatform.instance.getUserProfile();
-  }
-
-  /// Handle OAuth callback (legacy - not applicable for Revolut Pay SDK)
-  static Future<Map<String, dynamic>?> handleOAuthCallback(String url) {
-    return RevolutSdkBridgePlatform.instance.handleOAuthCallback(url);
   }
 
   /// Initialize the Revolut Pay SDK with configuration
@@ -117,46 +51,8 @@ class RevolutSdkBridge {
     String? environment,
   }) {
     return RevolutSdkBridgePlatform.instance.initialize(
-      clientId:
-          merchantPublicKey, // Using clientId parameter for backward compatibility
-      clientSecret: '', // Not needed for Revolut Pay SDK
-      redirectUri: '', // Not needed for Revolut Pay SDK
+      merchantPublicKey: merchantPublicKey,
       environment: environment,
-    );
-  }
-
-  /// Check if the Revolut Pay SDK is initialized
-  static Future<bool> isInitialized() {
-    return RevolutSdkBridgePlatform.instance.isInitialized();
-  }
-
-  /// Logout and clear session (legacy - not applicable for Revolut Pay SDK)
-  static Future<bool> logout() {
-    return RevolutSdkBridgePlatform.instance.logout();
-  }
-
-  /// Perform currency exchange (legacy - not applicable for Revolut Pay SDK)
-  static Future<Map<String, dynamic>?> performExchange({
-    required String fromAccountId,
-    required String toAccountId,
-    required double amount,
-    required String fromCurrency,
-    required String toCurrency,
-  }) {
-    return RevolutSdkBridgePlatform.instance.performExchange(
-      fromAccountId: fromAccountId,
-      toAccountId: toAccountId,
-      amount: amount,
-      fromCurrency: fromCurrency,
-      toCurrency: toCurrency,
-    );
-  }
-
-  /// Start the OAuth flow (legacy - not applicable for Revolut Pay SDK)
-  static Future<String?> startOAuthFlow({List<String>? scopes, String? state}) {
-    return RevolutSdkBridgePlatform.instance.startOAuthFlow(
-      scopes: scopes,
-      state: state,
     );
   }
 }

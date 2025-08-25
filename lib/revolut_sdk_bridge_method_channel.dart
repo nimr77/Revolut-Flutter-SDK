@@ -10,25 +10,6 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
   final methodChannel = const MethodChannel('revolut_sdk_bridge');
 
   @override
-  Future<Map<String, dynamic>?> createPayment({
-    required String accountId,
-    required String recipientAccountId,
-    required double amount,
-    required String currency,
-    String? reference,
-  }) async {
-    final result = await methodChannel
-        .invokeMethod<Map<String, dynamic>>('createPayment', {
-          'accountId': accountId,
-          'recipientAccountId': recipientAccountId,
-          'amount': amount,
-          'currency': currency,
-          'reference': reference,
-        });
-    return result;
-  }
-
-  @override
   Future<Map<String, dynamic>?> createRevolutPayButton({
     required String orderToken,
     required int amount,
@@ -37,151 +18,90 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
     bool? shouldRequestShipping,
     bool? savePaymentMethodForMerchant,
   }) async {
-    final result = await methodChannel
-        .invokeMethod<Map<String, dynamic>>('createRevolutPayButton', {
-          'orderToken': orderToken,
-          'amount': amount,
-          'currency': currency,
-          'email': email,
-          'shouldRequestShipping': shouldRequestShipping,
-          'savePaymentMethodForMerchant': savePaymentMethodForMerchant,
-        });
-    return result;
-  }
+    try {
+      final dynamic result = await methodChannel
+          .invokeMethod('createRevolutPayButton', {
+            'orderToken': orderToken,
+            'amount': amount,
+            'currency': currency,
+            'email': email,
+            'shouldRequestShipping': shouldRequestShipping,
+            'savePaymentMethodForMerchant': savePaymentMethodForMerchant,
+          });
 
-  @override
-  Future<Map<String, dynamic>?> getAccountDetails(String accountId) async {
-    final result = await methodChannel.invokeMethod<Map<String, dynamic>>(
-      'getAccountDetails',
-      {'accountId': accountId},
-    );
-    return result;
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>?> getAccountTransactions(
-    String accountId, {
-    DateTime? from,
-    DateTime? to,
-    int? limit,
-  }) async {
-    final result = await methodChannel
-        .invokeMethod<List<dynamic>>('getAccountTransactions', {
-          'accountId': accountId,
-          'from': from?.toIso8601String(),
-          'to': to?.toIso8601String(),
-          'limit': limit,
-        });
-    return result?.cast<Map<String, dynamic>>();
-  }
-
-  @override
-  Future<Map<String, dynamic>?> getExchangeRates({
-    String? fromCurrency,
-    String? toCurrency,
-  }) async {
-    final result = await methodChannel.invokeMethod<Map<String, dynamic>>(
-      'getExchangeRates',
-      {'fromCurrency': fromCurrency, 'toCurrency': toCurrency},
-    );
-    return result;
-  }
-
-  @override
-  Future<Map<String, dynamic>?> getPaymentStatus(String paymentId) async {
-    final result = await methodChannel.invokeMethod<Map<String, dynamic>>(
-      'getPaymentStatus',
-      {'paymentId': paymentId},
-    );
-    return result;
+      // Convert the result to the expected type
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+      return null;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
   }
 
   @override
   Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>(
-      'getPlatformVersion',
-    );
-    return version;
-  }
+    try {
+      final dynamic version = await methodChannel.invokeMethod(
+        'getPlatformVersion',
+      );
 
-  @override
-  Future<List<Map<String, dynamic>>?> getUserAccounts() async {
-    final result = await methodChannel.invokeMethod<List<dynamic>>(
-      'getUserAccounts',
-    );
-    return result?.cast<Map<String, dynamic>>();
-  }
-
-  @override
-  Future<Map<String, dynamic>?> getUserProfile() async {
-    final result = await methodChannel.invokeMethod<Map<String, dynamic>>(
-      'getUserProfile',
-    );
-    return result;
-  }
-
-  @override
-  Future<Map<String, dynamic>?> handleOAuthCallback(String url) async {
-    final result = await methodChannel.invokeMethod<Map<String, dynamic>>(
-      'handleOAuthCallback',
-      {'url': url},
-    );
-    return result;
+      // Convert the result to the expected type
+      if (version is String) {
+        return version;
+      }
+      return null;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
   }
 
   @override
   Future<bool> initialize({
-    required String clientId,
-    required String clientSecret,
-    required String redirectUri,
+    required String merchantPublicKey,
     String? environment,
   }) async {
-    final result = await methodChannel.invokeMethod<bool>('initialize', {
-      'clientId': clientId,
-      'clientSecret': clientSecret,
-      'redirectUri': redirectUri,
-      'environment': environment,
-    });
-    return result ?? false;
+    try {
+      final dynamic result = await methodChannel.invokeMethod('initialize', {
+        'merchantPublicKey': merchantPublicKey,
+        'environment': environment,
+      });
+
+      // Convert the result to the expected type
+      if (result is bool) {
+        return result;
+      }
+      return false;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
   }
+}
+
+/// Exception class for Revolut SDK errors
+class RevolutSdkException implements Exception {
+  final String code;
+  final String message;
+  final dynamic details;
+
+  RevolutSdkException({
+    required this.code,
+    required this.message,
+    this.details,
+  });
 
   @override
-  Future<bool> isInitialized() async {
-    final result = await methodChannel.invokeMethod<bool>('isInitialized');
-    return result ?? false;
-  }
-
-  @override
-  Future<bool> logout() async {
-    final result = await methodChannel.invokeMethod<bool>('logout');
-    return result ?? false;
-  }
-
-  @override
-  Future<Map<String, dynamic>?> performExchange({
-    required String fromAccountId,
-    required String toAccountId,
-    required double amount,
-    required String fromCurrency,
-    required String toCurrency,
-  }) async {
-    final result = await methodChannel
-        .invokeMethod<Map<String, dynamic>>('performExchange', {
-          'fromAccountId': fromAccountId,
-          'toAccountId': toAccountId,
-          'amount': amount,
-          'fromCurrency': fromCurrency,
-          'toCurrency': toCurrency,
-        });
-    return result;
-  }
-
-  @override
-  Future<String?> startOAuthFlow({List<String>? scopes, String? state}) async {
-    final result = await methodChannel.invokeMethod<String>('startOAuthFlow', {
-      'scopes': scopes,
-      'state': state,
-    });
-    return result;
-  }
+  String toString() => 'RevolutSdkException($code, $message, $details)';
 }

@@ -1,213 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:revolut_sdk_bridge/revolut_sdk_bridge.dart';
 
+import 'revolut_config.dart';
+
 void main() {
-  runApp(const RevolutSDKDemoApp());
+  runApp(const MyApp());
 }
 
-class RevolutPayDemoPage extends StatefulWidget {
-  const RevolutPayDemoPage({super.key});
-
-  @override
-  State<RevolutPayDemoPage> createState() => _RevolutPayDemoPageState();
-}
-
-class RevolutSDKDemoApp extends StatelessWidget {
-  const RevolutSDKDemoApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Revolut Pay SDK Bridge Demo',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: const RevolutPayDemoPage(),
+      title: 'Revolut Pay SDK Demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(title: 'Revolut Pay SDK Demo'),
     );
   }
 }
 
-class _RevolutPayDemoPageState extends State<RevolutPayDemoPage> {
+class MyHomePage extends StatefulWidget {
+  final String title;
+
+  const MyHomePage({super.key, required this.title});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
   bool _isInitialized = false;
   String _status = 'Not initialized';
-  Map<String, dynamic>? _lastPaymentResult;
+  final TextEditingController _amountController = TextEditingController(
+    text: '1000',
+  );
+  final TextEditingController _currencyController = TextEditingController(
+    text: 'GBP',
+  );
 
-  final TextEditingController _merchantPublicKeyController =
-      TextEditingController();
-  final TextEditingController _orderTokenController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _currencyController = TextEditingController();
-  final TextEditingController _customerEmailController =
-      TextEditingController();
+  // Logs from the native SDK
+  final List<RevolutLogEntry> _logs = [];
+  final List<RevolutPaymentResult> _paymentResults = [];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Revolut Pay SDK Demo'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title),
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Status Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Status: $_status',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          _isInitialized ? Icons.check_circle : Icons.error,
-                          color: _isInitialized ? Colors.green : Colors.red,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(_isInitialized ? 'Ready' : 'Not Ready'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Configuration Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Revolut Pay Configuration',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _merchantPublicKeyController,
-                      decoration: const InputDecoration(
-                        labelText: 'Merchant Public Key',
-                        border: OutlineInputBorder(),
-                        helperText:
-                            'Get this from your Revolut Developer Dashboard',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _isInitialized ? null : _initializeSDK,
-                      child: const Text('Initialize Revolut Pay SDK'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Payment Details Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Payment Details',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _orderTokenController,
-                      decoration: const InputDecoration(
-                        labelText: 'Order Token',
-                        border: OutlineInputBorder(),
-                        helperText:
-                            'Token from your server after creating an order',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _amountController,
-                            decoration: const InputDecoration(
-                              labelText: 'Amount (minor units)',
-                              border: OutlineInputBorder(),
-                              helperText: 'e.g., 1000 for £10.00',
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: _currencyController,
-                            decoration: const InputDecoration(
-                              labelText: 'Currency',
-                              border: OutlineInputBorder(),
-                              helperText: 'e.g., GBP, EUR, USD',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _customerEmailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Customer Email (Optional)',
-                        border: OutlineInputBorder(),
-                        helperText: 'For receipts and payment confirmations',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _isInitialized
-                          ? _createRevolutPayButton
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Create Revolut Pay Button'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Actions Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Actions',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _getPlatformVersion,
-                      child: const Text('Get Platform Version'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Payment Result Card
-            if (_lastPaymentResult != null) ...[
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -215,53 +66,276 @@ class _RevolutPayDemoPageState extends State<RevolutPayDemoPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Last Button Creation Result',
-                        style: Theme.of(context).textTheme.titleMedium,
+                        'SDK Status',
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
+                      const SizedBox(height: 8),
+                      Text(_status),
                       const SizedBox(height: 16),
-                      _buildInfoRow('Success', _lastPaymentResult!['success']),
-                      _buildInfoRow('Status', _lastPaymentResult!['status']),
-                      if (_lastPaymentResult!['message'] != null)
-                        _buildInfoRow(
-                          'Message',
-                          _lastPaymentResult!['message'],
+                      if (!_isInitialized)
+                        ElevatedButton(
+                          onPressed: _initializeSDK,
+                          child: const Text('Initialize SDK'),
                         ),
-                      if (_lastPaymentResult!['error'] != null)
-                        _buildInfoRow('Error', _lastPaymentResult!['error']),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-            ],
-
-            // Information Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'How Revolut Pay Works',
-                      style: Theme.of(context).textTheme.titleMedium,
+              if (_isInitialized) ...[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Payment Details',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _amountController,
+                          decoration: const InputDecoration(
+                            labelText: 'Amount (in minor units)',
+                            hintText: 'e.g., 1000 for £10.00',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _currencyController,
+                          decoration: const InputDecoration(
+                            labelText: 'Currency',
+                            hintText: 'e.g., GBP, EUR, USD',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Revolut Pay Button:',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        RevolutPayButton(
+                          orderToken: 'test_order_token_123',
+                          amount: int.tryParse(_amountController.text) ?? 1000,
+                          currency: _currencyController.text,
+                          email: 'customer@example.com',
+                          shouldRequestShipping: false,
+                          savePaymentMethodForMerchant: false,
+                          onPaymentResult: (result) {
+                            setState(() {
+                              _status =
+                                  'Payment completed: ${result['status'] ?? 'Unknown status'}';
+                            });
+                            if (result['success'] == true) {
+                              _showSuccessDialog(
+                                result['message']?.toString() ??
+                                    'Payment successful',
+                              );
+                            } else {
+                              _showErrorDialog(
+                                result['error']?.toString() ?? 'Payment failed',
+                              );
+                            }
+                          },
+                          onPaymentError: (error) {
+                            setState(() {
+                              _status = 'Payment error: $error';
+                            });
+                            _showErrorDialog(error);
+                          },
+                          onPaymentCancelled: () {
+                            setState(() {
+                              _status = 'Payment cancelled by user';
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '1. Initialize the SDK with your merchant public key\n'
-                      '2. Create an order on your server using the Merchant API\n'
-                      '3. Use the order token to create a Revolut Pay button\n'
-                      '4. The SDK will present the native Revolut Pay interface\n'
-                      '5. Handle the payment result in the completion handler\n'
-                      '6. Use webhooks to track payment lifecycle\n\n'
-                      'Note: This demo shows button creation. In a real app, the button would be displayed in your UI.',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Configuration Info',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Environment: ${RevolutConfig.environment}'),
+                      Text('Base URL: ${RevolutConfig.currentBaseUrl}'),
+                      Text(
+                        'Public Key: ${RevolutConfig.currentPublicKey.substring(0, 20)}...',
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Instructions',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '1. The SDK is configured with test credentials\n'
+                        '2. In production, get order tokens from your server\n'
+                        '3. Handle payment results and webhooks properly\n'
+                        '4. Test with sandbox environment first',
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              // SDK Logs
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'SDK Logs (${_logs.length})',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          if (_logs.isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _logs.clear();
+                                });
+                              },
+                              child: const Text('Clear'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_logs.isEmpty)
+                        const Text('No logs yet...')
+                      else
+                        Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ListView.builder(
+                            itemCount: _logs.length,
+                            reverse: true,
+                            itemBuilder: (context, index) {
+                              final log = _logs[_logs.length - 1 - index];
+                              Color logColor;
+                              switch (log.level) {
+                                case RevolutLogLevel.success:
+                                  logColor = Colors.green;
+                                  break;
+                                case RevolutLogLevel.warning:
+                                  logColor = Colors.orange;
+                                  break;
+                                case RevolutLogLevel.error:
+                                  logColor = Colors.red;
+                                  break;
+                                case RevolutLogLevel.info:
+                                  logColor = Colors.blue;
+                                  break;
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  log.toString(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: logColor,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Payment Results
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Payment Results (${_paymentResults.length})',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          if (_paymentResults.isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _paymentResults.clear();
+                                });
+                              },
+                              child: const Text('Clear'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_paymentResults.isEmpty)
+                        const Text('No payment results yet...')
+                      else
+                        Container(
+                          height: 150,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ListView.builder(
+                            itemCount: _paymentResults.length,
+                            reverse: true,
+                            itemBuilder: (context, index) {
+                              final result =
+                                  _paymentResults[_paymentResults.length -
+                                      1 -
+                                      index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  result.toString(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: result.success
+                                        ? Colors.green
+                                        : Colors.red,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -269,203 +343,117 @@ class _RevolutPayDemoPageState extends State<RevolutPayDemoPage> {
 
   @override
   void dispose() {
-    _merchantPublicKeyController.dispose();
-    _orderTokenController.dispose();
     _amountController.dispose();
     _currencyController.dispose();
-    _customerEmailController.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-    _checkInitializationStatus();
 
-    // Pre-fill with example values (replace with your actual values)
-    _merchantPublicKeyController.text = 'your_merchant_public_key';
-    _orderTokenController.text = 'your_order_token_from_server';
-    _amountController.text = '1000';
-    _currencyController.text = 'GBP';
-    _customerEmailController.text = 'customer@example.com';
-  }
+    // Initialize the Revolut logger
+    RevolutLogger.initialize();
 
-  Widget _buildInfoRow(String label, dynamic value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(child: Text(value?.toString() ?? 'N/A')),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _checkInitializationStatus() async {
-    try {
-      final initialized = await RevolutSdkBridge.isInitialized();
+    // Set up log callbacks
+    RevolutLogger.onLog = (logEntry) {
       setState(() {
-        _isInitialized = initialized;
-        _status = initialized ? 'Initialized' : 'Not initialized';
-      });
-    } catch (e) {
-      setState(() {
-        _status = 'Error checking status: $e';
-      });
-    }
-  }
-
-  Future<void> _createRevolutPayButton() async {
-    if (!_isInitialized) {
-      _showSnackBar('Please initialize the SDK first');
-      return;
-    }
-
-    if (_orderTokenController.text.isEmpty ||
-        _amountController.text.isEmpty ||
-        _currencyController.text.isEmpty) {
-      _showSnackBar('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      setState(() {
-        _status = 'Creating Revolut Pay button...';
-      });
-
-      final amount = int.tryParse(_amountController.text) ?? 0;
-      if (amount <= 0) {
-        _showSnackBar('Please enter a valid amount');
-        return;
-      }
-
-      final paymentResult = await RevolutSdkBridge.createRevolutPayButton(
-        orderToken: _orderTokenController.text,
-        amount: amount,
-        currency: _currencyController.text,
-        email: _customerEmailController.text.isNotEmpty
-            ? _customerEmailController.text
-            : null,
-        shouldRequestShipping:
-            false, // Set to true if you want shipping details
-        savePaymentMethodForMerchant:
-            false, // Set to true for subscriptions/MIT
-      );
-
-      setState(() {
-        _lastPaymentResult = paymentResult;
-        _status = paymentResult != null && paymentResult['success'] == true
-            ? 'Revolut Pay button created'
-            : 'Failed to create button';
-      });
-
-      if (paymentResult != null) {
-        if (paymentResult['success'] == true) {
-          _showSnackBar('Revolut Pay button created successfully!');
-          _showRevolutPayButtonInfo(paymentResult);
-        } else {
-          _showSnackBar('Failed to create button: ${paymentResult['error']}');
+        _logs.add(logEntry);
+        // Keep only last 50 logs
+        if (_logs.length > 50) {
+          _logs.removeAt(0);
         }
-      }
-    } catch (e) {
-      setState(() {
-        _status = 'Button creation error: $e';
       });
-      _showSnackBar('Failed to create button: $e');
-    }
-  }
+    };
 
-  Future<void> _getPlatformVersion() async {
-    try {
-      final version = await RevolutSdkBridge.getPlatformVersion();
-      _showSnackBar('Platform version: $version');
-    } catch (e) {
-      _showSnackBar('Failed to get platform version: $e');
-    }
+    // Set up payment result callbacks
+    RevolutLogger.onPaymentResult = (paymentResult) {
+      setState(() {
+        _paymentResults.add(paymentResult);
+        // Keep only last 10 payment results
+        if (_paymentResults.length > 10) {
+          _paymentResults.removeAt(0);
+        }
+      });
+
+      // Update status based on payment result
+      if (paymentResult.success) {
+        _status = 'Payment successful: ${paymentResult.message}';
+        _showSuccessDialog(paymentResult.message);
+      } else {
+        _status = 'Payment failed: ${paymentResult.error}';
+        _showErrorDialog(paymentResult.error);
+      }
+    };
+
+    _initializeSDK();
   }
 
   Future<void> _initializeSDK() async {
-    if (_merchantPublicKeyController.text.isEmpty) {
-      _showSnackBar('Please enter your merchant public key');
-      return;
-    }
-
-    setState(() {
-      _status = 'Initializing...';
-    });
-
     try {
-      final success = await RevolutSdkBridge.initialize(
-        merchantPublicKey: _merchantPublicKeyController.text,
-        environment: 'sandbox',
-      );
-
       setState(() {
-        _isInitialized = success;
-        _status = success
-            ? 'Initialized successfully'
-            : 'Initialization failed';
+        _status = 'Initializing SDK...';
       });
 
-      if (success) {
-        _showSnackBar('Revolut Pay SDK initialized successfully!');
+      // Use the configuration from RevolutConfig
+      final String merchantPublicKey = RevolutConfig.currentPublicKey;
+
+      final bool result = await RevolutSdkBridge.initialize(
+        merchantPublicKey: merchantPublicKey,
+        environment: RevolutConfig
+            .environment, // Use 'sandbox' for testing, 'production' for live payments
+      );
+
+      if (result) {
+        setState(() {
+          _isInitialized = true;
+          _status = 'SDK initialized successfully!';
+        });
+      } else {
+        setState(() {
+          _status = 'Failed to initialize SDK';
+        });
       }
     } catch (e) {
       setState(() {
-        _status = 'Initialization error: $e';
+        _status = 'Error initializing SDK: $e';
       });
-      _showSnackBar('Initialization failed: $e');
     }
   }
 
-  void _showRevolutPayButtonInfo(Map<String, dynamic> buttonConfig) {
+  void _showErrorDialog(String error) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Revolut Pay Button Created'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Order Token: ${buttonConfig['orderToken']}'),
-            Text(
-              'Amount: ${buttonConfig['amount']} ${buttonConfig['currency']}',
-            ),
-            Text('Email: ${buttonConfig['email']}'),
-            Text(
-              'Shipping: ${buttonConfig['shouldRequestShipping'] ? 'Yes' : 'No'}',
-            ),
-            Text(
-              'Save for Merchant: ${buttonConfig['savePaymentMethodForMerchant'] ? 'Yes' : 'No'}',
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'In a real app, this would display the actual Revolut Pay button that customers can tap to complete their payment.',
-              style: TextStyle(fontStyle: FontStyle.italic),
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Payment Failed'),
+          content: Text(error),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Payment Successful'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

@@ -15,7 +15,7 @@ A Flutter plugin that provides a bridge to the native Revolut Pay SDK for iOS, a
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'RevolutPayments/RevolutPay', '~> 3.0.0'
+  s.dependency 'RevolutPayments/RevolutPay', '~> 3.9.0'
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.
