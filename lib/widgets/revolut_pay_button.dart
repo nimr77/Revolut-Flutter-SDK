@@ -133,7 +133,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
   );
   Map<String, dynamic>? _buttonConfig;
   bool _isLoading = true;
-  int? _buttonId;
+  // int? _buttonId;
   Timer? _paymentTimeout;
 
   bool _isPaymentInProgress = false;
@@ -145,9 +145,8 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
       return widget.loadingWidget ?? _buildDefaultLoading();
     }
 
-    // Show placeholder while button is being created
     if (_buttonConfig == null) {
-      return widget.placeholderWidget ?? _buildDefaultPlaceholder();
+      throw Exception('Button config is null');
     }
 
     // Show the native Revolut Pay button
@@ -245,32 +244,6 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     );
   }
 
-  Widget _buildDefaultPlaceholder() {
-    return Container(
-      height: widget.style?.height ?? 50,
-      width: widget.style?.width,
-      margin: widget.style?.margin,
-      padding: widget.style?.padding ?? const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: widget.style?.borderRadius ?? BorderRadius.circular(8),
-        border: widget.style?.border,
-        boxShadow: widget.style?.boxShadow,
-      ),
-      child: Center(
-        child: Text(
-          'Revolut Pay',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: widget.style?.fontSize ?? 16,
-            fontWeight: widget.style?.fontWeight ?? FontWeight.w600,
-            fontFamily: widget.style?.fontFamily,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildIOSButton() {
     final creationParams = {
       ..._buttonConfig!,
@@ -296,9 +269,9 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
       return _buildIOSButton();
     } else if (Platform.isAndroid) {
       return _buildAndroidButton();
-    } else {
-      return _buildDefaultPlaceholder();
     }
+
+    throw Exception('Unsupported platform');
   }
 
   void _clearPaymentTimeout() {
@@ -329,7 +302,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
       if (result != null && result['buttonCreated'] == true) {
         setState(() {
           _buttonConfig = result;
-          _buttonId = result['viewId'];
+          // _buttonId = result['viewId'];
           _isLoading = false;
         });
 
