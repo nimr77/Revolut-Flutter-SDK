@@ -9,38 +9,55 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
   @visibleForTesting
   final methodChannel = const MethodChannel('revolut_sdk_bridge');
 
+  /// Clean up all Revolut Pay buttons
+  @override
+  Future<bool> cleanupAllButtons() async {
+    final dynamic result = await methodChannel.invokeMethod(
+      'cleanupAllButtons',
+      {},
+    );
+    return result is bool ? result : false;
+  }
+
+  /// Clean up a specific Revolut Pay button
+  @override
+  Future<bool> cleanupButton(int viewId) async {
+    final dynamic result = await methodChannel.invokeMethod('cleanupButton', {
+      'viewId': viewId,
+    });
+    return result is bool ? result : false;
+  }
+
   @override
   Future<Map<String, dynamic>?> createRevolutPayButton({
     required String orderToken,
     required int amount,
     required String currency,
-    String? email,
-    bool? shouldRequestShipping,
-    bool? savePaymentMethodForMerchant,
+    required String email,
+    bool shouldRequestShipping = false,
+    bool savePaymentMethodForMerchant = false,
+    String? returnURL,
+    String? merchantName,
+    String? merchantLogoURL,
+    Map<String, dynamic>? additionalData,
   }) async {
-    try {
-      final dynamic result = await methodChannel
-          .invokeMethod('createRevolutPayButton', {
-            'orderToken': orderToken,
-            'amount': amount,
-            'currency': currency,
-            'email': email,
-            'shouldRequestShipping': shouldRequestShipping,
-            'savePaymentMethodForMerchant': savePaymentMethodForMerchant,
-          });
-
-      // Convert the result to the expected type
-      if (result is Map) {
-        return Map<String, dynamic>.from(result);
-      }
-      return null;
-    } on PlatformException catch (e) {
-      throw RevolutSdkException(
-        code: e.code,
-        message: e.message ?? 'Unknown error occurred',
-        details: e.details,
-      );
+    final dynamic result = await methodChannel
+        .invokeMethod('createRevolutPayButton', {
+          'orderToken': orderToken,
+          'amount': amount,
+          'currency': currency,
+          'email': email,
+          'shouldRequestShipping': shouldRequestShipping,
+          'savePaymentMethodForMerchant': savePaymentMethodForMerchant,
+          'returnURL': returnURL,
+          'merchantName': merchantName,
+          'merchantLogoURL': merchantLogoURL,
+          'additionalData': additionalData,
+        });
+    if (result is Map) {
+      return Map<String, dynamic>.from(result);
     }
+    return null;
   }
 
   @override

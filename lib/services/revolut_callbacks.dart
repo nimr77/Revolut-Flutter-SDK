@@ -1,4 +1,50 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+/// Log entry from the native Revolut SDK
+class RevolutLogEntry {
+  final RevolutLogLevel level;
+  final String message;
+  final DateTime timestamp;
+  final String source;
+
+  RevolutLogEntry({
+    required this.level,
+    required this.message,
+    required this.timestamp,
+    required this.source,
+  });
+
+  factory RevolutLogEntry.fromMap(Map<String, dynamic> map) {
+    return RevolutLogEntry(
+      level: _parseLogLevel(map['level'] as String?),
+      message: map['message'] as String? ?? '',
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        ((map['timestamp'] as num?) ?? 0).toInt(),
+      ),
+      source: map['source'] as String? ?? 'Unknown',
+    );
+  }
+
+  @override
+  String toString() {
+    return '[${timestamp.toIso8601String()}] [$source] [${level.name.toUpperCase()}] $message';
+  }
+
+  static RevolutLogLevel _parseLogLevel(String? level) {
+    switch (level?.toLowerCase()) {
+      case 'success':
+        return RevolutLogLevel.success;
+      case 'warning':
+        return RevolutLogLevel.warning;
+      case 'error':
+        return RevolutLogLevel.error;
+      case 'info':
+      default:
+        return RevolutLogLevel.info;
+    }
+  }
+}
 
 /// Callback service for Revolut SDK operations
 /// This service receives callbacks from the native platform plugins (iOS/Android)
@@ -52,51 +98,6 @@ class RevolutCallbacks {
 
       default:
         print('Unknown method call: ${call.method}');
-    }
-  }
-}
-
-/// Log entry from the native Revolut SDK
-class RevolutLogEntry {
-  final RevolutLogLevel level;
-  final String message;
-  final DateTime timestamp;
-  final String source;
-
-  RevolutLogEntry({
-    required this.level,
-    required this.message,
-    required this.timestamp,
-    required this.source,
-  });
-
-  factory RevolutLogEntry.fromMap(Map<String, dynamic> map) {
-    return RevolutLogEntry(
-      level: _parseLogLevel(map['level'] as String?),
-      message: map['message'] as String? ?? '',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(
-        ((map['timestamp'] as num?) ?? 0).toInt(),
-      ),
-      source: map['source'] as String? ?? 'Unknown',
-    );
-  }
-
-  @override
-  String toString() {
-    return '[${timestamp.toIso8601String()}] [$source] [${level.name.toUpperCase()}] $message';
-  }
-
-  static RevolutLogLevel _parseLogLevel(String? level) {
-    switch (level?.toLowerCase()) {
-      case 'success':
-        return RevolutLogLevel.success;
-      case 'warning':
-        return RevolutLogLevel.warning;
-      case 'error':
-        return RevolutLogLevel.error;
-      case 'info':
-      default:
-        return RevolutLogLevel.info;
     }
   }
 }

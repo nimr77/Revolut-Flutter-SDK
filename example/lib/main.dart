@@ -33,18 +33,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool _isInitialized = false;
-  String _status = 'Not initialized';
-  final TextEditingController _amountController = TextEditingController(
-    text: '1000',
-  );
-  final TextEditingController _currencyController = TextEditingController(
-    text: 'GBP',
-  );
-
-  // Logs from the native SDK
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _currencyController = TextEditingController();
   final List<RevolutLogEntry> _logs = [];
   final List<RevolutPaymentResult> _paymentResults = [];
+  bool _isInitialized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +63,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
-                      Text(_status),
+                      Text(
+                        _isInitialized
+                            ? 'SDK Initialized'
+                            : 'SDK Not Initialized',
+                      ),
                       const SizedBox(height: 16),
                       if (!_isInitialized)
                         ElevatedButton(
@@ -111,45 +108,120 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text(
-                          'Revolut Pay Button:',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        RevolutPayButton(
-                          orderToken: 'test_order_token_123',
-                          amount: int.tryParse(_amountController.text) ?? 1000,
-                          currency: _currencyController.text,
-                          email: 'customer@example.com',
-                          shouldRequestShipping: false,
-                          savePaymentMethodForMerchant: false,
-                          onPaymentResult: (result) {
-                            setState(() {
-                              _status =
-                                  'Payment completed: ${result['status'] ?? 'Unknown status'}';
-                            });
-                            if (result['success'] == true) {
-                              _showSuccessDialog(
-                                result['message']?.toString() ??
-                                    'Payment successful',
-                              );
-                            } else {
-                              _showErrorDialog(
-                                result['error']?.toString() ?? 'Payment failed',
-                              );
-                            }
-                          },
-                          onPaymentError: (error) {
-                            setState(() {
-                              _status = 'Payment error: $error';
-                            });
-                            _showErrorDialog(error);
-                          },
-                          onPaymentCancelled: () {
-                            setState(() {
-                              _status = 'Payment cancelled by user';
-                            });
-                          },
+                        // Revolut Pay Button with full customization
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Revolut Pay Button',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 16),
+                                RevolutPayButton(
+                                  style: RevolutPayButtonStyle(height: 70),
+                                  config: RevolutPayButtonConfig(
+                                    orderToken: 'test_order_token_123',
+                                    amount:
+                                        int.tryParse(_amountController.text) ??
+                                        1000,
+                                    currency: _currencyController.text,
+                                    email: 'customer@example.com',
+                                    shouldRequestShipping: false,
+                                    savePaymentMethodForMerchant: false,
+                                    returnURL:
+                                        'revolut-sdk-bridge://revolut-pay',
+                                    merchantName: 'Test Merchant',
+                                    merchantLogoURL:
+                                        'https://example.com/logo.png',
+                                    additionalData: {
+                                      'test_mode': true,
+                                      'source': 'flutter_example',
+                                    },
+                                  ),
+                                  onPaymentResult: (result) {
+                                    setState(() {
+                                      _paymentResults.add(result);
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Payment Result: ${result.success ? "Success" : "Failed"}',
+                                        ),
+                                        backgroundColor: result.success
+                                            ? Colors.green
+                                            : Colors.red,
+                                      ),
+                                    );
+                                  },
+                                  onPaymentError: (error) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Payment Error: $error'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  },
+                                  onPaymentCancelled: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Payment Cancelled'),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                  },
+                                  onButtonCreated: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Revolut Pay button created successfully!',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  },
+                                  onButtonError: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Failed to create Revolut Pay button',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                                // Controller Control Buttons
+                                // Removed _buttonController control buttons
+
+                                // Button Status Display
+                                const SizedBox(height: 16),
+                                Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Button Status',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text('Is Initialized: $_isInitialized'),
+                                        // Removed _buttonController status display
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -351,48 +423,26 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
-    // Initialize the Revolut logger
-    RevolutLogger.initialize();
-
-    // Set up log callbacks
-    RevolutLogger.onLog = (logEntry) {
+    RevolutCallbacks.initialize();
+    RevolutCallbacks.onLog = (logEntry) {
       setState(() {
         _logs.add(logEntry);
-        // Keep only last 50 logs
-        if (_logs.length > 50) {
-          _logs.removeAt(0);
-        }
+        if (_logs.length > 100) _logs.removeAt(0);
       });
     };
-
-    // Set up payment result callbacks
-    RevolutLogger.onPaymentResult = (paymentResult) {
+    RevolutCallbacks.onPaymentResult = (paymentResult) {
       setState(() {
         _paymentResults.add(paymentResult);
-        // Keep only last 10 payment results
-        if (_paymentResults.length > 10) {
-          _paymentResults.removeAt(0);
-        }
+        if (_paymentResults.length > 50) _paymentResults.removeAt(0);
       });
-
-      // Update status based on payment result
-      if (paymentResult.success) {
-        _status = 'Payment successful: ${paymentResult.message}';
-        _showSuccessDialog(paymentResult.message);
-      } else {
-        _status = 'Payment failed: ${paymentResult.error}';
-        _showErrorDialog(paymentResult.error);
-      }
     };
-
     _initializeSDK();
   }
 
   Future<void> _initializeSDK() async {
     try {
       setState(() {
-        _status = 'Initializing SDK...';
+        _isInitialized = false;
       });
 
       // Use the configuration from RevolutConfig
@@ -407,53 +457,16 @@ class _MyHomePageState extends State<MyHomePage> {
       if (result) {
         setState(() {
           _isInitialized = true;
-          _status = 'SDK initialized successfully!';
         });
       } else {
         setState(() {
-          _status = 'Failed to initialize SDK';
+          _isInitialized = false;
         });
       }
     } catch (e) {
       setState(() {
-        _status = 'Error initializing SDK: $e';
+        _isInitialized = false;
       });
     }
-  }
-
-  void _showErrorDialog(String error) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Payment Failed'),
-          content: Text(error),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showSuccessDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Payment Successful'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
   }
 }

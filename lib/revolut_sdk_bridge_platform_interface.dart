@@ -22,14 +22,28 @@ abstract class RevolutSdkBridgePlatform extends PlatformInterface {
   /// Constructs a RevolutSdkBridgePlatform.
   RevolutSdkBridgePlatform() : super(token: _token);
 
+  /// Clean up all Revolut Pay buttons
+  Future<bool> cleanupAllButtons() {
+    throw UnimplementedError('cleanupAllButtons() has not been implemented.');
+  }
+
+  /// Clean up a specific Revolut Pay button
+  Future<bool> cleanupButton(int viewId) {
+    throw UnimplementedError('cleanupButton() has not been implemented.');
+  }
+
   /// Create a Revolut Pay button for payment processing
   Future<Map<String, dynamic>?> createRevolutPayButton({
     required String orderToken,
     required int amount,
     required String currency,
-    String? email,
-    bool? shouldRequestShipping,
-    bool? savePaymentMethodForMerchant,
+    required String email,
+    bool shouldRequestShipping = false,
+    bool savePaymentMethodForMerchant = false,
+    String? returnURL,
+    String? merchantName,
+    String? merchantLogoURL,
+    Map<String, dynamic>? additionalData,
   }) {
     throw UnimplementedError(
       'createRevolutPayButton() has not been implemented.',
