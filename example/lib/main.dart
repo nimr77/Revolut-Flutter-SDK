@@ -192,6 +192,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                       ),
                                     );
                                   },
+                                  onError: (error) {
+                                    // Developer handles errors themselves
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: $error'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  },
                                 ),
 
                                 // Controller Control Buttons

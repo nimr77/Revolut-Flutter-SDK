@@ -10,26 +10,26 @@ class RevolutPayButton extends StatefulWidget {
   final RevolutPayButtonConfig config;
   final RevolutPayButtonStyle? style;
   final Widget? loadingWidget;
-  final Widget? errorWidget;
   final Widget? placeholderWidget;
   final Function(RevolutPaymentResult)? onPaymentResult;
   final Function(String)? onPaymentError;
   final VoidCallback? onPaymentCancelled;
   final VoidCallback? onButtonCreated;
   final VoidCallback? onButtonError;
+  final Function(String)? onError; // Simple error callback
 
   const RevolutPayButton({
     super.key,
     required this.config,
     this.style,
     this.loadingWidget,
-    this.errorWidget,
     this.placeholderWidget,
     this.onPaymentResult,
     this.onPaymentError,
     this.onPaymentCancelled,
     this.onButtonCreated,
     this.onButtonError,
+    this.onError,
   });
 
   @override
@@ -133,8 +133,6 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
   );
   Map<String, dynamic>? _buttonConfig;
   bool _isLoading = true;
-  bool _hasError = false;
-  String? _errorMessage;
   int? _buttonId;
   Timer? _paymentTimeout;
 
@@ -142,18 +140,17 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state while creating button
     if (_isLoading) {
       return widget.loadingWidget ?? _buildDefaultLoading();
     }
 
-    if (_hasError) {
-      return widget.errorWidget ?? _buildDefaultError();
-    }
-
+    // Show placeholder while button is being created
     if (_buttonConfig == null) {
       return widget.placeholderWidget ?? _buildDefaultPlaceholder();
     }
 
+    // Show the native Revolut Pay button
     return _buildNativeButton();
   }
 
@@ -207,7 +204,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
         children: [
           Expanded(
             child: Text(
-              'Error: ${_errorMessage ?? 'Failed to load button'}',
+              'Error: ${widget.onError?.call('Failed to load button') ?? 'Failed to load button'}',
               style: TextStyle(
                 color: Colors.red[700],
                 fontSize: widget.style?.fontSize ?? 14,
@@ -313,9 +310,6 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     try {
       setState(() {
         _isLoading = true;
-        _hasError = false;
-        _errorMessage = null;
-        _isPaymentInProgress = false;
       });
 
       final result = await RevolutSdkBridge.createRevolutPayButton(
@@ -346,12 +340,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
         );
       }
     } catch (e) {
-      setState(() {
-        _hasError = true;
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-
+      widget.onError?.call(e.toString());
       widget.onButtonError?.call();
     }
   }
@@ -386,24 +375,13 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
       _createButton();
     } else {
       // Payment failed
-      setState(() {
-        _hasError = true;
-        _errorMessage = error.isNotEmpty ? error : 'Payment failed';
-      });
-
-      // Call the developer's error callback
-      widget.onPaymentError?.call(_errorMessage ?? 'Payment failed');
+      widget.onError?.call(error.isNotEmpty ? error : 'Payment failed');
+      widget.onPaymentError?.call(error.isNotEmpty ? error : 'Payment failed');
     }
   }
 
   void _handlePaymentTimeout() {
-    setState(() {
-      _isPaymentInProgress = false;
-      _hasError = true;
-      _errorMessage = 'Payment timeout - please try again';
-    });
-
-    widget.onPaymentError?.call('Payment timeout - please try again');
+    widget.onError?.call('Payment timeout - please try again');
   }
 
   void _onPlatformViewCreated(int id) {

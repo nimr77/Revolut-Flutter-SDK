@@ -18,7 +18,7 @@ A Flutter plugin that provides a bridge to the Revolut Pay iOS SDK, allowing you
 
 ## 🎨 Revolut Pay Button Customization
 
-The `RevolutPayButton` widget provides full customization options:
+The `RevolutPayButton` widget provides full customization options with simple error handling:
 
 ### Button Configuration
 ```dart
@@ -45,7 +45,6 @@ RevolutPayButton(
     fontWeight: FontWeight.w600,
   ),
   loadingWidget: CustomLoadingWidget(),
-  errorWidget: CustomErrorWidget(),
   placeholderWidget: CustomPlaceholderWidget(),
   onPaymentResult: (result) {
     print('Payment Result: ${result.success ? "Success" : "Failed"}');
@@ -62,8 +61,22 @@ RevolutPayButton(
   onButtonError: () {
     print('Button Error');
   },
+  onError: (error) {
+    print('General Error: $error');
+    // Handle any errors yourself
+  },
 )
 ```
+
+### 🚨 Simple Error Handling
+
+The button provides simple error callbacks - **you handle the errors yourself**:
+
+- **`onError(String error)`**: General error callback for any errors
+- **`onPaymentError(String error)`**: Payment-specific errors
+- **`onButtonError()`**: Button creation/operation errors
+
+**No complex state management** - just simple callbacks that you can handle however you want!
 
 ### Visual Styling
 
@@ -395,13 +408,13 @@ The main widget for displaying Revolut Pay buttons.
 - `config`: Button configuration parameters
 - `style`: Visual styling options
 - `loadingWidget`: Custom loading widget
-- `errorWidget`: Custom error widget
 - `placeholderWidget`: Custom placeholder widget
 - `onPaymentResult`: Payment result callback
 - `onPaymentError`: Payment error callback
 - `onPaymentCancelled`: Payment cancellation callback
 - `onButtonCreated`: Button creation callback
 - `onButtonError`: Button error callback
+- `onError`: General error callback
 
 **Example:**
 ```dart
@@ -410,6 +423,10 @@ RevolutPayButton(
   style: RevolutPayButtonStyle(/* ... */),
   onPaymentResult: (result) {
     print('Payment: ${result.success}');
+  },
+  onError: (error) {
+    print('Error: $error');
+    // Handle error yourself
   },
 )
 ```
