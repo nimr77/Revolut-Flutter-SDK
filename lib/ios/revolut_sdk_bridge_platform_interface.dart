@@ -23,17 +23,19 @@ abstract class RevolutSdkBridgePlatform extends PlatformInterface {
   RevolutSdkBridgePlatform() : super(token: _token);
 
   /// Clean up all Revolut Pay buttons
-  Future<bool> cleanupAllButtons() {
-    throw UnimplementedError('cleanupAllButtons() has not been implemented.');
+  Future<bool> cleanupAllButtonsIos() {
+    throw UnimplementedError(
+      'cleanupAllButtonsIos() has not been implemented.',
+    );
   }
 
   /// Clean up a specific Revolut Pay button
-  Future<bool> cleanupButton(int viewId) {
-    throw UnimplementedError('cleanupButton() has not been implemented.');
+  Future<bool> cleanupButtonIos(int viewId) {
+    throw UnimplementedError('cleanupButtonIos() has not been implemented.');
   }
 
   /// Create a Revolut Pay button for payment processing
-  Future<Map<String, dynamic>?> createRevolutPayButton({
+  Future<Map<String, dynamic>?> createRevolutPayButtonIos({
     required String orderToken,
     required int amount,
     required String currency,
@@ -46,20 +48,22 @@ abstract class RevolutSdkBridgePlatform extends PlatformInterface {
     Map<String, dynamic>? additionalData,
   }) {
     throw UnimplementedError(
-      'createRevolutPayButton() has not been implemented.',
+      'createRevolutPayButtonIos() has not been implemented.',
     );
   }
 
   /// Get platform version (for debugging)
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('getPlatformVersion() has not been implemented.');
+  Future<String?> getPlatformVersionIos() {
+    throw UnimplementedError(
+      'getPlatformVersionIos() has not been implemented.',
+    );
   }
 
   /// Initialize the Revolut Pay SDK with configuration
-  Future<bool> initialize({
+  Future<bool> initializeIos({
     required String merchantPublicKey,
     String? environment,
   }) {
-    throw UnimplementedError('initialize() has not been implemented.');
+    throw UnimplementedError('initializeIos() has not been implemented.');
   }
 }

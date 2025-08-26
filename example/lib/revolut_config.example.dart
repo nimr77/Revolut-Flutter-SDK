@@ -29,3 +29,4 @@ class RevolutConfig {
     return environment == 'production' ? prodPublicKey : testPublicKey;
   }
 }
+

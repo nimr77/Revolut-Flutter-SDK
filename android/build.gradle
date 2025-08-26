@@ -52,9 +52,13 @@ android {
     }
 
     dependencies {
-        // Revolut SDK dependencies
-        implementation 'com.revolut:revolut-sdk:2.0.0'
-        implementation 'com.revolut:revolut-auth:2.0.0'
+        // Revolut Pay SDK dependencies
+        implementation 'com.revolut:revolut-pay-sdk:2.0.0'
+        implementation 'com.revolut:revolut-pay-ui:2.0.0'
+        
+        // Android lifecycle dependencies for SDK integration
+        implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+        implementation 'androidx.lifecycle:lifecycle-common-java8:2.7.0'
         
         testImplementation("org.jetbrains.kotlin:kotlin-test")
         testImplementation("org.mockito:mockito-core:5.0.0")

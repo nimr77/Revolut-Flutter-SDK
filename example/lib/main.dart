@@ -35,8 +35,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _currencyController = TextEditingController();
-  final List<RevolutLogEntry> _logs = [];
-  final List<RevolutPaymentResult> _paymentResults = [];
+  final List<RevolutLogEntryIos> _logs = [];
+  final List<RevolutPaymentResultIos> _paymentResults = [];
   bool _isInitialized = false;
 
   @override
@@ -120,9 +120,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                   style: Theme.of(context).textTheme.titleLarge,
                                 ),
                                 const SizedBox(height: 16),
-                                RevolutPayButton(
-                                  style: RevolutPayButtonStyle(height: 70),
-                                  config: RevolutPayButtonConfig(
+                                RevolutPayButtonIos(
+                                  style: RevolutPayButtonStyleIos(height: 70),
+                                  config: RevolutPayButtonConfigIos(
                                     orderToken: 'test_order_token_123',
                                     amount:
                                         int.tryParse(_amountController.text) ??
@@ -313,16 +313,16 @@ class _MyHomePageState extends State<MyHomePage> {
                               final log = _logs[_logs.length - 1 - index];
                               Color logColor;
                               switch (log.level) {
-                                case RevolutLogLevel.success:
+                                case RevolutLogLevelIos.success:
                                   logColor = Colors.green;
                                   break;
-                                case RevolutLogLevel.warning:
+                                case RevolutLogLevelIos.warning:
                                   logColor = Colors.orange;
                                   break;
-                                case RevolutLogLevel.error:
+                                case RevolutLogLevelIos.error:
                                   logColor = Colors.red;
                                   break;
-                                case RevolutLogLevel.info:
+                                case RevolutLogLevelIos.info:
                                   logColor = Colors.blue;
                                   break;
                               }
@@ -432,14 +432,14 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    RevolutCallbacks.initialize();
-    RevolutCallbacks.onLog = (logEntry) {
+    RevolutCallbacksIos.initialize();
+    RevolutCallbacksIos.onLog = (logEntry) {
       setState(() {
         _logs.add(logEntry);
         if (_logs.length > 100) _logs.removeAt(0);
       });
     };
-    RevolutCallbacks.onPaymentResult = (paymentResult) {
+    RevolutCallbacksIos.onPaymentResult = (paymentResult) {
       setState(() {
         _paymentResults.add(paymentResult);
         if (_paymentResults.length > 50) _paymentResults.removeAt(0);
@@ -457,7 +457,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // Use the configuration from RevolutConfig
       final String merchantPublicKey = RevolutConfig.currentPublicKey;
 
-      final bool result = await RevolutSdkBridge.initialize(
+      final bool result = await RevolutSdkBridgeIos.initializeIos(
         merchantPublicKey: merchantPublicKey,
         environment: RevolutConfig
             .environment, // Use 'sandbox' for testing, 'production' for live payments

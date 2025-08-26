@@ -5,39 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:revolut_sdk_bridge/revolut_sdk_bridge.dart';
 
-/// The Revolut Pay button widget
-class RevolutPayButton extends StatefulWidget {
-  final RevolutPayButtonConfig config;
-  final RevolutPayButtonStyle? style;
-  final Widget? loadingWidget;
-  final Widget? placeholderWidget;
-  final Function(RevolutPaymentResult)? onPaymentResult;
-  final Function(String)? onPaymentError;
-  final VoidCallback? onPaymentCancelled;
-  final VoidCallback? onButtonCreated;
-  final VoidCallback? onButtonError;
-  final Function(String)? onError; // Simple error callback
-
-  const RevolutPayButton({
-    super.key,
-    required this.config,
-    this.style,
-    this.loadingWidget,
-    this.placeholderWidget,
-    this.onPaymentResult,
-    this.onPaymentError,
-    this.onPaymentCancelled,
-    this.onButtonCreated,
-    this.onButtonError,
-    this.onError,
-  });
-
-  @override
-  State<RevolutPayButton> createState() => _RevolutPayButtonState();
-}
-
 /// Configuration for the Revolut Pay button
-class RevolutPayButtonConfig {
+class RevolutPayButtonConfigIos {
   final String orderToken;
   final int amount;
   final String currency;
@@ -49,7 +18,7 @@ class RevolutPayButtonConfig {
   final String? merchantLogoURL;
   final Map<String, dynamic>? additionalData;
 
-  const RevolutPayButtonConfig({
+  const RevolutPayButtonConfigIos({
     required this.orderToken,
     required this.amount,
     required this.currency,
@@ -78,8 +47,39 @@ class RevolutPayButtonConfig {
   }
 }
 
+/// The Revolut Pay button widget
+class RevolutPayButtonIos extends StatefulWidget {
+  final RevolutPayButtonConfigIos config;
+  final RevolutPayButtonStyleIos? style;
+  final Widget? loadingWidget;
+  final Widget? placeholderWidget;
+  final Function(RevolutPaymentResultIos)? onPaymentResult;
+  final Function(String)? onPaymentError;
+  final VoidCallback? onPaymentCancelled;
+  final VoidCallback? onButtonCreated;
+  final VoidCallback? onButtonError;
+  final Function(String)? onError; // Simple error callback
+
+  const RevolutPayButtonIos({
+    super.key,
+    required this.config,
+    this.style,
+    this.loadingWidget,
+    this.placeholderWidget,
+    this.onPaymentResult,
+    this.onPaymentError,
+    this.onPaymentCancelled,
+    this.onButtonCreated,
+    this.onButtonError,
+    this.onError,
+  });
+
+  @override
+  State<RevolutPayButtonIos> createState() => _RevolutPayButtonIosState();
+}
+
 /// Style configuration for the Revolut Pay button
-class RevolutPayButtonStyle {
+class RevolutPayButtonStyleIos {
   final double? height;
   final double? width;
   final EdgeInsetsGeometry? margin;
@@ -93,7 +93,7 @@ class RevolutPayButtonStyle {
   final FontWeight? fontWeight;
   final String? fontFamily;
 
-  const RevolutPayButtonStyle({
+  const RevolutPayButtonStyleIos({
     this.height,
     this.width,
     this.margin,
@@ -126,7 +126,7 @@ class RevolutPayButtonStyle {
   }
 }
 
-class _RevolutPayButtonState extends State<RevolutPayButton> {
+class _RevolutPayButtonIosState extends State<RevolutPayButtonIos> {
   // Method channel for receiving payment results from native code
   static const MethodChannel _paymentChannel = MethodChannel(
     'revolut_pay_button_payment',
@@ -285,7 +285,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
         _isLoading = true;
       });
 
-      final result = await RevolutSdkBridge.createRevolutPayButton(
+      final result = await RevolutSdkBridgeIos.createRevolutPayButtonIos(
         orderToken: widget.config.orderToken,
         amount: widget.config.amount,
         currency: widget.config.currency,
@@ -334,7 +334,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
 
     if (success) {
       // Payment successful
-      final paymentResult = RevolutPaymentResult(
+      final paymentResult = RevolutPaymentResultIos(
         success: true,
         message: message,
         error: '',

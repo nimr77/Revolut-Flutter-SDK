@@ -11,7 +11,7 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
 
   /// Clean up all Revolut Pay buttons
   @override
-  Future<bool> cleanupAllButtons() async {
+  Future<bool> cleanupAllButtonsIos() async {
     final dynamic result = await methodChannel.invokeMethod(
       'cleanupAllButtons',
       {},
@@ -21,7 +21,7 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
 
   /// Clean up a specific Revolut Pay button
   @override
-  Future<bool> cleanupButton(int viewId) async {
+  Future<bool> cleanupButtonIos(int viewId) async {
     final dynamic result = await methodChannel.invokeMethod('cleanupButton', {
       'viewId': viewId,
     });
@@ -29,7 +29,7 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
   }
 
   @override
-  Future<Map<String, dynamic>?> createRevolutPayButton({
+  Future<Map<String, dynamic>?> createRevolutPayButtonIos({
     required String orderToken,
     required int amount,
     required String currency,
@@ -61,7 +61,7 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
   }
 
   @override
-  Future<String?> getPlatformVersion() async {
+  Future<String?> getPlatformVersionIos() async {
     try {
       final dynamic version = await methodChannel.invokeMethod(
         'getPlatformVersion',
@@ -82,7 +82,7 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
   }
 
   @override
-  Future<bool> initialize({
+  Future<bool> initializeIos({
     required String merchantPublicKey,
     String? environment,
   }) async {

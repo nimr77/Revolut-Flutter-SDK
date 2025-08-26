@@ -2,16 +2,16 @@ import 'package:flutter/services.dart';
 
 /// Callback service for Revolut SDK operations
 /// This service receives callbacks from the native platform plugins (iOS/Android)
-class RevolutCallbacks {
+class RevolutCallbacksIos {
   static const MethodChannel _logChannel = MethodChannel(
     'revolut_sdk_bridge_logs',
   );
 
   /// Callback for log entries
-  static Function(RevolutLogEntry)? onLog;
+  static Function(RevolutLogEntryIos)? onLog;
 
   /// Callback for payment results
-  static Function(RevolutPaymentResult)? onPaymentResult;
+  static Function(RevolutPaymentResultIos)? onPaymentResult;
 
   /// Dispose the callback service
   static void dispose() {
@@ -28,7 +28,7 @@ class RevolutCallbacks {
     switch (call.method) {
       case 'onLog':
         if (call.arguments != null && call.arguments is Map) {
-          final logEntry = RevolutLogEntry.fromMap(
+          final logEntry = RevolutLogEntryIos.fromMap(
             Map<String, dynamic>.from(call.arguments),
           );
           onLog?.call(logEntry);
@@ -40,7 +40,7 @@ class RevolutCallbacks {
 
       case 'onPaymentResult':
         if (call.arguments != null && call.arguments is Map) {
-          final paymentResult = RevolutPaymentResult.fromMap(
+          final paymentResult = RevolutPaymentResultIos.fromMap(
             Map<String, dynamic>.from(call.arguments),
           );
           onPaymentResult?.call(paymentResult);
@@ -57,21 +57,21 @@ class RevolutCallbacks {
 }
 
 /// Log entry from the native Revolut SDK
-class RevolutLogEntry {
-  final RevolutLogLevel level;
+class RevolutLogEntryIos {
+  final RevolutLogLevelIos level;
   final String message;
   final DateTime timestamp;
   final String source;
 
-  RevolutLogEntry({
+  RevolutLogEntryIos({
     required this.level,
     required this.message,
     required this.timestamp,
     required this.source,
   });
 
-  factory RevolutLogEntry.fromMap(Map<String, dynamic> map) {
-    return RevolutLogEntry(
+  factory RevolutLogEntryIos.fromMap(Map<String, dynamic> map) {
+    return RevolutLogEntryIos(
       level: _parseLogLevel(map['level'] as String?),
       message: map['message'] as String? ?? '',
       timestamp: DateTime.fromMillisecondsSinceEpoch(
@@ -86,40 +86,40 @@ class RevolutLogEntry {
     return '[${timestamp.toIso8601String()}] [$source] [${level.name.toUpperCase()}] $message';
   }
 
-  static RevolutLogLevel _parseLogLevel(String? level) {
+  static RevolutLogLevelIos _parseLogLevel(String? level) {
     switch (level?.toLowerCase()) {
       case 'success':
-        return RevolutLogLevel.success;
+        return RevolutLogLevelIos.success;
       case 'warning':
-        return RevolutLogLevel.warning;
+        return RevolutLogLevelIos.warning;
       case 'error':
-        return RevolutLogLevel.error;
+        return RevolutLogLevelIos.error;
       case 'info':
       default:
-        return RevolutLogLevel.info;
+        return RevolutLogLevelIos.info;
     }
   }
 }
 
 /// Log levels for Revolut SDK operations
-enum RevolutLogLevel { info, success, warning, error }
+enum RevolutLogLevelIos { info, success, warning, error }
 
 /// Payment result from the native Revolut SDK
-class RevolutPaymentResult {
+class RevolutPaymentResultIos {
   final bool success;
   final String message;
   final String error;
   final DateTime timestamp;
 
-  RevolutPaymentResult({
+  RevolutPaymentResultIos({
     required this.success,
     required this.message,
     required this.error,
     required this.timestamp,
   });
 
-  factory RevolutPaymentResult.fromMap(Map<String, dynamic> map) {
-    return RevolutPaymentResult(
+  factory RevolutPaymentResultIos.fromMap(Map<String, dynamic> map) {
+    return RevolutPaymentResultIos(
       success: map['success'] as bool? ?? false,
       message: map['message'] as String? ?? '',
       error: map['error'] as String? ?? '',
