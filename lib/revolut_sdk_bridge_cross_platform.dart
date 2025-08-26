@@ -275,6 +275,22 @@ class RevolutSdkBridge {
   /// Check if running on Android
   bool get isAndroid => Platform.isAndroid;
 
+  /// Check if the event channel is ready (Android only)
+  bool get isEventChannelReady {
+    if (isAndroid) {
+      try {
+        final methodChannel = android.RevolutSdkBridgeMethodChannel(
+          android.RevolutCallbacks(),
+        );
+        return methodChannel.isEventChannelReady;
+      } catch (e) {
+        debugPrint('Failed to check event channel status: $e');
+        return false;
+      }
+    }
+    return false;
+  }
+
   /// Check if running on iOS
   bool get isIOS => Platform.isIOS;
 
@@ -445,6 +461,41 @@ class RevolutSdkBridge {
     }
   }
 
+  /// Check the overall plugin status
+  Future<Map<String, dynamic>> getPluginStatus() async {
+    try {
+      final status = <String, dynamic>{
+        'platform': isAndroid
+            ? 'android'
+            : isIOS
+            ? 'ios'
+            : 'unknown',
+        'isAndroid': isAndroid,
+        'isIOS': isIOS,
+      };
+
+      if (isAndroid) {
+        status['eventChannelReady'] = isEventChannelReady;
+        status['platformVersion'] = await getPlatformVersion();
+        status['sdkVersion'] = await getSdkVersion();
+      } else if (isIOS) {
+        status['platformVersion'] = await getPlatformVersion();
+      }
+
+      return status;
+    } catch (e) {
+      debugPrint('Failed to get plugin status: $e');
+      return {
+        'error': e.toString(),
+        'platform': isAndroid
+            ? 'android'
+            : isIOS
+            ? 'ios'
+            : 'unknown',
+      };
+    }
+  }
+
   /// Get the SDK version (Android only)
   Future<Map<String, dynamic>?> getSdkVersion() async {
     try {
@@ -486,9 +537,20 @@ class RevolutSdkBridge {
             ? RevolutEnvironment.main
             : RevolutEnvironment.sandbox;
 
-        return await android.RevolutSdkBridgeMethodChannel(
+        // Wait for event channel to be ready
+        final eventChannelReady = await waitForEventChannel();
+        if (!eventChannelReady) {
+          debugPrint(
+            'Warning: Event channel not ready, but continuing with initialization',
+          );
+        }
+
+        // Create the method channel and proceed with initialization
+        final methodChannel = android.RevolutSdkBridgeMethodChannel(
           android.RevolutCallbacks(),
-        ).init(
+        );
+
+        return await methodChannel.init(
           environment: androidEnv.value,
           returnUri: returnUri ?? 'revolut://payment-return',
           merchantPublicKey: merchantPublicKey,
@@ -539,5 +601,51 @@ class RevolutSdkBridge {
       debugPrint('Failed to process payment: $e');
       rethrow;
     }
+  }
+
+  /// Manually setup the event channel (Android only)
+  Future<bool> setupEventChannel() async {
+    if (isAndroid) {
+      try {
+        final methodChannel = android.RevolutSdkBridgeMethodChannel(
+          android.RevolutCallbacks(),
+        );
+        methodChannel.ensureEventChannelReady();
+        return methodChannel.isEventChannelReady;
+      } catch (e) {
+        debugPrint('Failed to setup event channel: $e');
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /// Manually trigger event channel setup and wait for it to be ready
+  Future<bool> waitForEventChannel() async {
+    if (isAndroid) {
+      try {
+        // Try to setup the event channel
+        await setupEventChannel();
+
+        // Wait for it to be ready
+        int attempts = 0;
+        const maxAttempts = 10;
+        const delayMs = 100;
+
+        while (!isEventChannelReady && attempts < maxAttempts) {
+          await Future.delayed(Duration(milliseconds: delayMs));
+          attempts++;
+          debugPrint(
+            'Waiting for event channel... attempt $attempts/$maxAttempts',
+          );
+        }
+
+        return isEventChannelReady;
+      } catch (e) {
+        debugPrint('Failed to wait for event channel: $e');
+        return false;
+      }
+    }
+    return true; // iOS doesn't need event channel
   }
 }

@@ -21,83 +21,148 @@ class RevolutSdkBridgeMethodChannel {
   /// Creates a new method channel instance
   RevolutSdkBridgeMethodChannel(this._callbacks) {
     _setupEventChannel();
+
+    // If event channel setup fails, retry after a short delay
+    if (!isEventChannelReady) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!isEventChannelReady) {
+          debugPrint('Retrying event channel setup...');
+          _retryEventChannelSetup();
+        }
+      });
+    }
   }
 
-  /// Sets up the event channel to listen for native events
-  void _setupEventChannel() {
-    _eventSubscription = _eventChannel.receiveBroadcastStream().listen(
-      (event) {
-        _handleNativeEvent(event);
-      },
-      onError: (error) {
-        debugPrint('Revolut SDK Bridge event channel error: $error');
-      },
-    );
+  /// Checks if the event channel is ready
+  bool get isEventChannelReady => _eventSubscription != null;
+
+  /// Checks if the SDK is initialized
+  bool get isInitialized => _isInitialized;
+
+  /// Continues the confirmation flow
+  Future<bool> continueConfirmationFlow({required String controllerId}) async {
+    try {
+      final result = await _channel.invokeMethod('continueConfirmationFlow', {
+        'controllerId': controllerId,
+      });
+
+      if (result is bool) {
+        return result;
+      } else if (result is Map<String, dynamic>) {
+        return result['success'] as bool? ?? false;
+      }
+      return false;
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Platform exception during continueConfirmationFlow: ${e.code} - ${e.message}',
+      );
+      rethrow;
+    } catch (e) {
+      debugPrint('Error during continueConfirmationFlow: $e');
+      rethrow;
+    }
   }
 
-  /// Handles events received from the native side
-  void _handleNativeEvent(dynamic event) {
-    if (event is! Map<String, dynamic>) {
-      debugPrint('Invalid event format received: $event');
-      return;
+  /// Creates a controller for managing confirmation flows
+  Future<ControllerResultData> createController() async {
+    if (!_isInitialized) {
+      throw StateError('Revolut SDK not initialized. Call init() first.');
     }
 
-    final methodName = event['method'] as String?;
-    final data = event['data'] as Map<String, dynamic>?;
+    try {
+      final result = await _channel.invokeMethod('createController');
 
-    if (methodName == null || data == null) {
-      debugPrint('Invalid event structure: $event');
-      return;
+      if (result is Map<String, dynamic>) {
+        return ControllerResultData.fromMap(result);
+      }
+      throw FormatException('Invalid response format from native side');
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Platform exception during createController: ${e.code} - ${e.message}',
+      );
+      rethrow;
+    } catch (e) {
+      debugPrint('Error during createController: $e');
+      rethrow;
     }
+  }
 
-    switch (methodName) {
-      case 'onOrderCompleted':
-        _callbacks.handleOrderCompleted(data);
-        break;
-      case 'onOrderFailed':
-        _callbacks.handleOrderFailed(data);
-        break;
-      case 'onUserPaymentAbandoned':
-        _callbacks.handleUserPaymentAbandoned(data);
-        break;
-      case 'onPaymentStatusUpdate':
-        _callbacks.handlePaymentStatusUpdate(data);
-        break;
-      case 'onButtonClick':
-        _callbacks.handleButtonClick(data);
-        break;
-      case 'onControllerStateChange':
-        _callbacks.handleControllerStateChange(data);
-        break;
-      case 'onBannerInteraction':
-        _callbacks.handleBannerInteraction(data);
-        break;
-      case 'onLifecycleEvent':
-        _callbacks.handleLifecycleEvent(data);
-        break;
-      case 'onDeepLinkReceived':
-        _callbacks.handleDeepLinkEvent(data);
-        break;
-      case 'onNetworkStatusUpdate':
-        _callbacks.handleNetworkStatusUpdate(data);
-        break;
-      case 'onConfigurationUpdate':
-        _callbacks.handleConfigurationUpdate(data);
-        break;
-      case 'onDebugLog':
-        _callbacks.handleDebugLog(data);
-        break;
-      case 'onPerformanceMetric':
-        _callbacks.handlePerformanceMetric(data);
-        break;
-      case 'onUserInteraction':
-        _callbacks.handleUserInteraction(data);
-        break;
-      case 'onSessionEvent':
-        _callbacks.handleSessionEvent(data);
-        break;
-      default:
-        debugPrint('Unknown event method: $methodName');
+  /// Disposes the method channel and cleans up resources
+  void dispose() {
+    _eventSubscription?.cancel();
+    _eventSubscription = null;
+    _isInitialized = false;
+  }
+
+  /// Disposes a controller
+  Future<bool> disposeController({required String controllerId}) async {
+    try {
+      final result = await _channel.invokeMethod('disposeController', {
+        'controllerId': controllerId,
+      });
+
+      if (result is bool) {
+        return result;
+      } else if (result is Map<String, dynamic>) {
+        return result['success'] as bool? ?? false;
+      }
+      return false;
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Platform exception during disposeController: ${e.code} - ${e.message}',
+      );
+      rethrow;
+    } catch (e) {
+      debugPrint('Error during disposeController: $e');
+      rethrow;
+    }
+  }
+
+  /// Ensures the event channel is set up
+  void ensureEventChannelReady() {
+    if (!isEventChannelReady) {
+      debugPrint('Event channel not ready, setting up...');
+      _setupEventChannel();
+    }
+  }
+
+  /// Gets the platform version
+  Future<String> getPlatformVersion() async {
+    try {
+      final result = await _channel.invokeMethod('getPlatformVersion');
+
+      if (result is String) {
+        return result;
+      }
+      throw FormatException('Invalid response format from native side');
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Platform exception during getPlatformVersion: ${e.code} - ${e.message}',
+      );
+      rethrow;
+    } catch (e) {
+      debugPrint('Error during getPlatformVersion: $e');
+      rethrow;
+    }
+  }
+
+  /// Gets the SDK version
+  Future<Map<String, dynamic>> getSdkVersion() async {
+    try {
+      final result = await _channel.invokeMethod('getSdkVersion');
+
+      if (result is Map<String, dynamic>) {
+        return result;
+      }
+      throw FormatException('Invalid response format from native side');
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Platform exception during getSdkVersion: ${e.code} - ${e.message}',
+      );
+      rethrow;
+    } catch (e) {
+      debugPrint('Error during getSdkVersion: $e');
+      rethrow;
     }
   }
 
@@ -110,6 +175,9 @@ class RevolutSdkBridgeMethodChannel {
     Map<String, dynamic>? customer,
   }) async {
     try {
+      // Ensure event channel is ready before proceeding
+      ensureEventChannelReady();
+
       final result = await _channel.invokeMethod('init', {
         'environment': environment,
         'returnUri': returnUri,
@@ -224,30 +292,6 @@ class RevolutSdkBridgeMethodChannel {
     }
   }
 
-  /// Creates a controller for managing confirmation flows
-  Future<ControllerResultData> createController() async {
-    if (!_isInitialized) {
-      throw StateError('Revolut SDK not initialized. Call init() first.');
-    }
-
-    try {
-      final result = await _channel.invokeMethod('createController');
-
-      if (result is Map<String, dynamic>) {
-        return ControllerResultData.fromMap(result);
-      }
-      throw FormatException('Invalid response format from native side');
-    } on PlatformException catch (e) {
-      debugPrint(
-        'Platform exception during createController: ${e.code} - ${e.message}',
-      );
-      rethrow;
-    } catch (e) {
-      debugPrint('Error during createController: $e');
-      rethrow;
-    }
-  }
-
   /// Sets the order token for a controller
   Future<bool> setOrderToken({
     required String orderToken,
@@ -305,101 +349,105 @@ class RevolutSdkBridgeMethodChannel {
     }
   }
 
-  /// Continues the confirmation flow
-  Future<bool> continueConfirmationFlow({required String controllerId}) async {
+  /// Handles events received from the native side
+  void _handleNativeEvent(dynamic event) {
     try {
-      final result = await _channel.invokeMethod('continueConfirmationFlow', {
-        'controllerId': controllerId,
-      });
-
-      if (result is bool) {
-        return result;
-      } else if (result is Map<String, dynamic>) {
-        return result['success'] as bool? ?? false;
+      if (event is! Map<String, dynamic>) {
+        debugPrint('Invalid event format received: $event');
+        return;
       }
-      return false;
-    } on PlatformException catch (e) {
-      debugPrint(
-        'Platform exception during continueConfirmationFlow: ${e.code} - ${e.message}',
-      );
-      rethrow;
+
+      final methodName = event['method'] as String?;
+      final data = event['data'] as Map<String, dynamic>?;
+
+      if (methodName == null || data == null) {
+        debugPrint('Invalid event structure: $event');
+        return;
+      }
+
+      switch (methodName) {
+        case 'onEventChannelReady':
+          debugPrint('Event channel is ready: $data');
+          break;
+        case 'onOrderCompleted':
+          _callbacks.handleOrderCompleted(data);
+          break;
+        case 'onOrderFailed':
+          _callbacks.handleOrderFailed(data);
+          break;
+        case 'onUserPaymentAbandoned':
+          _callbacks.handleUserPaymentAbandoned(data);
+          break;
+        case 'onPaymentStatusUpdate':
+          _callbacks.handlePaymentStatusUpdate(data);
+          break;
+        case 'onButtonClick':
+          _callbacks.handleButtonClick(data);
+          break;
+        case 'onControllerStateChange':
+          _callbacks.handleControllerStateChange(data);
+          break;
+        case 'onBannerInteraction':
+          _callbacks.handleBannerInteraction(data);
+          break;
+        case 'onLifecycleEvent':
+          _callbacks.handleLifecycleEvent(data);
+          break;
+        case 'onDeepLinkReceived':
+          _callbacks.handleDeepLinkEvent(data);
+          break;
+        case 'onNetworkStatusUpdate':
+          _callbacks.handleNetworkStatusUpdate(data);
+          break;
+        case 'onConfigurationUpdate':
+          _callbacks.handleConfigurationUpdate(data);
+          break;
+        case 'onDebugLog':
+          _callbacks.handleDebugLog(data);
+          break;
+        case 'onPerformanceMetric':
+          _callbacks.handlePerformanceMetric(data);
+          break;
+        case 'onUserInteraction':
+          _callbacks.handleUserInteraction(data);
+          break;
+        case 'onSessionEvent':
+          _callbacks.handleSessionEvent(data);
+          break;
+        default:
+          debugPrint('Unknown event method: $methodName');
+      }
     } catch (e) {
-      debugPrint('Error during continueConfirmationFlow: $e');
-      rethrow;
+      debugPrint('Error handling native event: $e');
+      // Don't crash on event handling errors
     }
   }
 
-  /// Disposes a controller
-  Future<bool> disposeController({required String controllerId}) async {
-    try {
-      final result = await _channel.invokeMethod('disposeController', {
-        'controllerId': controllerId,
-      });
-
-      if (result is bool) {
-        return result;
-      } else if (result is Map<String, dynamic>) {
-        return result['success'] as bool? ?? false;
-      }
-      return false;
-    } on PlatformException catch (e) {
-      debugPrint(
-        'Platform exception during disposeController: ${e.code} - ${e.message}',
-      );
-      rethrow;
-    } catch (e) {
-      debugPrint('Error during disposeController: $e');
-      rethrow;
+  /// Retries setting up the event channel
+  void _retryEventChannelSetup() {
+    if (_eventSubscription != null) {
+      _eventSubscription?.cancel();
+      _eventSubscription = null;
     }
+    _setupEventChannel();
   }
 
-  /// Gets the SDK version
-  Future<Map<String, dynamic>> getSdkVersion() async {
+  /// Sets up the event channel to listen for native events
+  void _setupEventChannel() {
     try {
-      final result = await _channel.invokeMethod('getSdkVersion');
-
-      if (result is Map<String, dynamic>) {
-        return result;
-      }
-      throw FormatException('Invalid response format from native side');
-    } on PlatformException catch (e) {
-      debugPrint(
-        'Platform exception during getSdkVersion: ${e.code} - ${e.message}',
+      _eventSubscription = _eventChannel.receiveBroadcastStream().listen(
+        (event) {
+          _handleNativeEvent(event);
+        },
+        onError: (error) {
+          debugPrint('Revolut SDK Bridge event channel error: $error');
+          // Don't crash on event channel errors, just log them
+        },
+        cancelOnError: false, // Don't cancel the subscription on errors
       );
-      rethrow;
     } catch (e) {
-      debugPrint('Error during getSdkVersion: $e');
-      rethrow;
+      debugPrint('Failed to setup event channel: $e');
+      // Don't crash if event channel setup fails
     }
-  }
-
-  /// Gets the platform version
-  Future<String> getPlatformVersion() async {
-    try {
-      final result = await _channel.invokeMethod('getPlatformVersion');
-
-      if (result is String) {
-        return result;
-      }
-      throw FormatException('Invalid response format from native side');
-    } on PlatformException catch (e) {
-      debugPrint(
-        'Platform exception during getPlatformVersion: ${e.code} - ${e.message}',
-      );
-      rethrow;
-    } catch (e) {
-      debugPrint('Error during getPlatformVersion: $e');
-      rethrow;
-    }
-  }
-
-  /// Checks if the SDK is initialized
-  bool get isInitialized => _isInitialized;
-
-  /// Disposes the method channel and cleans up resources
-  void dispose() {
-    _eventSubscription?.cancel();
-    _eventSubscription = null;
-    _isInitialized = false;
   }
 }

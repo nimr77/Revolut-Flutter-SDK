@@ -14,18 +14,43 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.EventChannel.EventSink
+import io.flutter.plugin.common.EventChannel.StreamHandler
 import android.content.Context
 import android.net.Uri
 import androidx.annotation.NonNull
 
 class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var channel : MethodChannel
+    private lateinit var eventChannel : EventChannel
     private lateinit var context: Context
     private var activityBinding: ActivityPluginBinding? = null
+    private var eventSink: EventSink? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "revolut_sdk_bridge")
         channel.setMethodCallHandler(this)
+        
+        eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "revolut_sdk_bridge_events")
+        eventChannel.setStreamHandler(object : StreamHandler {
+            override fun onListen(arguments: Any?, events: EventSink?) {
+                eventSink = events
+                // Send a ready event to confirm the event channel is working
+                events?.success(mapOf(
+                    "method" to "onEventChannelReady",
+                    "data" to mapOf(
+                        "status" to "ready",
+                        "platform" to "android"
+                    )
+                ))
+            }
+
+            override fun onCancel(arguments: Any?) {
+                eventSink = null
+            }
+        })
+        
         context = flutterPluginBinding.applicationContext
     }
 
@@ -34,6 +59,14 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             "init" -> handleInit(call, result)
             "getSdkVersion" -> handleGetSdkVersion(call, result)
             "getPlatformVersion" -> handleGetPlatformVersion(call, result)
+            "pay" -> handlePay(call, result)
+            "provideButton" -> handleProvideButton(call, result)
+            "providePromotionalBannerWidget" -> handleProvidePromotionalBannerWidget(call, result)
+            "createController" -> handleCreateController(call, result)
+            "setOrderToken" -> handleSetOrderToken(call, result)
+            "setSavePaymentMethodForMerchant" -> handleSetSavePaymentMethodForMerchant(call, result)
+            "continueConfirmationFlow" -> handleContinueConfirmationFlow(call, result)
+            "disposeController" -> handleDisposeController(call, result)
             else -> result.notImplemented()
         }
     }
@@ -112,8 +145,178 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    private fun handlePay(call: MethodCall, result: Result) {
+        try {
+            val orderToken = call.argument<String>("orderToken") ?: ""
+            val savePaymentMethodForMerchant = call.argument<Boolean>("savePaymentMethodForMerchant") ?: false
+            
+            if (orderToken.isEmpty()) {
+                result.error("INVALID_ARGUMENTS", "orderToken is required", null)
+                return
+            }
+            
+            // TODO: Implement actual payment flow with Revolut SDK
+            // For now, return success to prevent crashes
+            result.success(true)
+            
+            // Send event to Flutter side
+            sendEvent("onPaymentStatusUpdate", mapOf(
+                "status" to "initiated",
+                "orderToken" to orderToken
+            ))
+        } catch (e: Exception) {
+            result.error("PAY_ERROR", "Failed to initiate payment: ${e.message}", null)
+        }
+    }
+
+    private fun handleProvideButton(call: MethodCall, result: Result) {
+        try {
+            val buttonParams = call.argument<Map<String, Any>>("buttonParams")
+            
+            // TODO: Implement actual button creation with Revolut SDK
+            // For now, return mock data to prevent crashes
+            val buttonData = mapOf(
+                "buttonId" to "mock_button_${System.currentTimeMillis()}",
+                "isEnabled" to true,
+                "buttonType" to "pay",
+                "buttonParams" to buttonParams
+            )
+            
+            result.success(buttonData)
+        } catch (e: Exception) {
+            result.error("PROVIDE_BUTTON_ERROR", "Failed to provide button: ${e.message}", null)
+        }
+    }
+
+    private fun handleProvidePromotionalBannerWidget(call: MethodCall, result: Result) {
+        try {
+            val promoParams = call.argument<Map<String, Any>>("promoParams")
+            val themeId = call.argument<String>("themeId")
+            
+            // TODO: Implement actual banner creation with Revolut SDK
+            // For now, return mock data to prevent crashes
+            val bannerData = mapOf(
+                "bannerId" to "mock_banner_${System.currentTimeMillis()}",
+                "isVisible" to true,
+                "bannerType" to "promotional",
+                "promoParams" to promoParams,
+                "themeId" to themeId
+            )
+            
+            result.success(bannerData)
+        } catch (e: Exception) {
+            result.error("PROVIDE_BANNER_ERROR", "Failed to provide banner: ${e.message}", null)
+        }
+    }
+
+    private fun handleCreateController(call: MethodCall, result: Result) {
+        try {
+            // TODO: Implement actual controller creation with Revolut SDK
+            // For now, return mock data to prevent crashes
+            val controllerData = mapOf(
+                "controllerId" to "mock_controller_${System.currentTimeMillis()}",
+                "isActive" to true,
+                "canContinue" to false
+            )
+            
+            result.success(controllerData)
+        } catch (e: Exception) {
+            result.error("CREATE_CONTROLLER_ERROR", "Failed to create controller: ${e.message}", null)
+        }
+    }
+
+    private fun handleSetOrderToken(call: MethodCall, result: Result) {
+        try {
+            val orderToken = call.argument<String>("orderToken") ?: ""
+            val controllerId = call.argument<String>("controllerId") ?: ""
+            
+            if (orderToken.isEmpty() || controllerId.isEmpty()) {
+                result.error("INVALID_ARGUMENTS", "orderToken and controllerId are required", null)
+                return
+            }
+            
+            // TODO: Implement actual order token setting with Revolut SDK
+            // For now, return success to prevent crashes
+            result.success(true)
+        } catch (e: Exception) {
+            result.error("SET_ORDER_TOKEN_ERROR", "Failed to set order token: ${e.message}", null)
+        }
+    }
+
+    private fun handleSetSavePaymentMethodForMerchant(call: MethodCall, result: Result) {
+        try {
+            val savePaymentMethodForMerchant = call.argument<Boolean>("savePaymentMethodForMerchant") ?: false
+            val controllerId = call.argument<String>("controllerId") ?: ""
+            
+            if (controllerId.isEmpty()) {
+                result.error("INVALID_ARGUMENTS", "controllerId is required", null)
+                return
+            }
+            
+            // TODO: Implement actual save payment method setting with Revolut SDK
+            // For now, return success to prevent crashes
+            result.success(true)
+        } catch (e: Exception) {
+            result.error("SET_SAVE_PAYMENT_METHOD_ERROR", "Failed to set save payment method: ${e.message}", null)
+        }
+    }
+
+    private fun handleContinueConfirmationFlow(call: MethodCall, result: Result) {
+        try {
+            val controllerId = call.argument<String>("controllerId") ?: ""
+            
+            if (controllerId.isEmpty()) {
+                result.error("INVALID_ARGUMENTS", "controllerId is required", null)
+                return
+            }
+            
+            // TODO: Implement actual confirmation flow continuation with Revolut SDK
+            // For now, return success to prevent crashes
+            result.success(true)
+            
+            // Send event to Flutter side
+            sendEvent("onControllerStateChange", mapOf(
+                "controllerId" to controllerId,
+                "state" to "continuing"
+            ))
+        } catch (e: Exception) {
+            result.error("CONTINUE_CONFIRMATION_FLOW_ERROR", "Failed to continue confirmation flow: ${e.message}", null)
+        }
+    }
+
+    private fun handleDisposeController(call: MethodCall, result: Result) {
+        try {
+            val controllerId = call.argument<String>("controllerId") ?: ""
+            
+            if (controllerId.isEmpty()) {
+                result.error("INVALID_ARGUMENTS", "controllerId is required", null)
+                return
+            }
+            
+            // TODO: Implement actual controller disposal with Revolut SDK
+            // For now, return success to prevent crashes
+            result.success(true)
+        } catch (e: Exception) {
+            result.error("DISPOSE_CONTROLLER_ERROR", "Failed to dispose controller: ${e.message}", null)
+        }
+    }
+
+    private fun sendEvent(method: String, data: Map<String, Any>) {
+        try {
+            eventSink?.success(mapOf(
+                "method" to method,
+                "data" to data
+            ))
+        } catch (e: Exception) {
+            // Log the error but don't crash
+            android.util.Log.w("RevolutSdkBridge", "Failed to send event: $method", e)
+        }
+    }
+
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        eventChannel.setStreamHandler(null)
+        eventSink = null
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {

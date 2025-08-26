@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:revolut_sdk_bridge/revolut_sdk_bridge.dart';
 
 import 'cross_platform_test.dart';
+import 'plugin_test.dart';
 import 'revolut_config.dart';
 
 void main() {
@@ -59,6 +60,18 @@ class _MyHomePageState extends State<MyHomePage> {
             },
             tooltip: 'Cross-Platform Test',
           ),
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PluginTest(),
+                ),
+              );
+            },
+            tooltip: 'Plugin Test',
+          ),
         ],
       ),
       body: Padding(
@@ -88,6 +101,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         ElevatedButton(
                           onPressed: _initializeSDK,
                           child: const Text('Initialize SDK'),
+                        ),
+                      if (_isInitialized)
+                        ElevatedButton(
+                          onPressed: _testEventChannel,
+                          child: const Text('Test Event Channel'),
                         ),
                     ],
                   ),
@@ -478,6 +496,39 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _isInitialized = false;
       });
+    }
+  }
+
+  Future<void> _testEventChannel() async {
+    try {
+      // Test event channel setup
+      final eventChannelReady = await RevolutSdkBridge().setupEventChannel();
+      
+      // Test waiting for event channel
+      final waitResult = await RevolutSdkBridge().waitForEventChannel();
+      
+      // Get plugin status
+      final status = await RevolutSdkBridge().getPluginStatus();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Event Channel Test:\n'
+            'Setup: ${eventChannelReady ? "Success" : "Failed"}\n'
+            'Wait: ${waitResult ? "Success" : "Failed"}\n'
+            'Status: ${status.toString()}',
+          ),
+          backgroundColor: (eventChannelReady && waitResult) ? Colors.green : Colors.orange,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Event Channel Test Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }
