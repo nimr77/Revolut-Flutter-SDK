@@ -166,26 +166,6 @@ class _RevolutPayButtonIosState extends State<RevolutPayButtonIos> {
     _setupPaymentChannel();
   }
 
-  Widget _buildAndroidButton() {
-    final creationParams = {
-      ..._buttonConfig!,
-      'buttonId': _buttonConfig!['viewId'],
-      'style': widget.style?.toMap(),
-    };
-
-    return Container(
-      height: widget.style?.height ?? 50,
-      width: widget.style?.width,
-      margin: widget.style?.margin,
-      child: AndroidView(
-        viewType: 'revolut_pay_button',
-        onPlatformViewCreated: _onPlatformViewCreated,
-        creationParams: creationParams,
-        creationParamsCodec: const StandardMessageCodec(),
-      ),
-    );
-  }
-
   Widget _buildDefaultError() {
     return Container(
       height: widget.style?.height ?? 50,
@@ -267,10 +247,7 @@ class _RevolutPayButtonIosState extends State<RevolutPayButtonIos> {
   Widget _buildNativeButton() {
     if (Platform.isIOS) {
       return _buildIOSButton();
-    } else if (Platform.isAndroid) {
-      return _buildAndroidButton();
     }
-
     throw Exception('Unsupported platform');
   }
 

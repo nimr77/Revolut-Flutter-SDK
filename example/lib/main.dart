@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:revolut_sdk_bridge/revolut_sdk_bridge.dart';
 
+import 'cross_platform_test.dart';
 import 'revolut_config.dart';
 
 void main() {
@@ -35,8 +36,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _currencyController = TextEditingController();
-  final List<RevolutLogEntryIos> _logs = [];
-  final List<RevolutPaymentResultIos> _paymentResults = [];
+  final List<Map<String, dynamic>> _logs = [];
+  final List<Map<String, dynamic>> _paymentResults = [];
   bool _isInitialized = false;
 
   @override
@@ -45,6 +46,20 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.device_hub),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CrossPlatformTest(),
+                ),
+              );
+            },
+            tooltip: 'Cross-Platform Test',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -120,27 +135,24 @@ class _MyHomePageState extends State<MyHomePage> {
                                   style: Theme.of(context).textTheme.titleLarge,
                                 ),
                                 const SizedBox(height: 16),
-                                RevolutPayButtonIos(
-                                  style: RevolutPayButtonStyleIos(height: 70),
-                                  config: RevolutPayButtonConfigIos(
-                                    orderToken: 'test_order_token_123',
-                                    amount:
-                                        int.tryParse(_amountController.text) ??
-                                        1000,
-                                    currency: _currencyController.text,
-                                    email: 'customer@example.com',
-                                    shouldRequestShipping: false,
-                                    savePaymentMethodForMerchant: false,
-                                    returnURL:
-                                        'revolut-sdk-bridge://revolut-pay',
-                                    merchantName: 'Test Merchant',
-                                    merchantLogoURL:
-                                        'https://example.com/logo.png',
-                                    additionalData: {
-                                      'test_mode': true,
-                                      'source': 'flutter_example',
-                                    },
-                                  ),
+                                CrossPlatformRevolutPayButton(
+                                  orderToken: 'test_order_token_123',
+                                  amount:
+                                      int.tryParse(_amountController.text) ??
+                                      1000,
+                                  currency: _currencyController.text,
+                                  email: 'customer@example.com',
+                                  shouldRequestShipping: false,
+                                  savePaymentMethodForMerchant: false,
+                                  returnURL: 'revolut-sdk-bridge://revolut-pay',
+                                  merchantName: 'Test Merchant',
+                                  merchantLogoURL:
+                                      'https://example.com/logo.png',
+                                  additionalData: {
+                                    'test_mode': true,
+                                    'source': 'flutter_example',
+                                  },
+                                  height: 70,
                                   onPaymentResult: (result) {
                                     setState(() {
                                       _paymentResults.add(result);
@@ -148,9 +160,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          'Payment Result: ${result.success ? "Success" : "Failed"}',
+                                          'Payment Result: ${result['success'] ? "Success" : "Failed"}',
                                         ),
-                                        backgroundColor: result.success
+                                        backgroundColor:
+                                            result['success'] == true
                                             ? Colors.green
                                             : Colors.red,
                                       ),
@@ -311,18 +324,20 @@ class _MyHomePageState extends State<MyHomePage> {
                             reverse: true,
                             itemBuilder: (context, index) {
                               final log = _logs[_logs.length - 1 - index];
-                              Color logColor;
-                              switch (log.level) {
-                                case RevolutLogLevelIos.success:
+                              Color logColor = Colors.blue; // Default color
+                              final level = log['level'] as String? ?? 'info';
+                              switch (level.toLowerCase()) {
+                                case 'success':
                                   logColor = Colors.green;
                                   break;
-                                case RevolutLogLevelIos.warning:
+                                case 'warning':
                                   logColor = Colors.orange;
                                   break;
-                                case RevolutLogLevelIos.error:
+                                case 'error':
                                   logColor = Colors.red;
                                   break;
-                                case RevolutLogLevelIos.info:
+                                case 'info':
+                                default:
                                   logColor = Colors.blue;
                                   break;
                               }
@@ -398,10 +413,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   vertical: 2,
                                 ),
                                 child: Text(
-                                  result.toString(),
+                                  '${result['timestamp'] ?? ''} ${result['success'] == true ? 'SUCCESS' : 'ERROR'}: ${result['message'] ?? result['error'] ?? ''}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: result.success
+                                    color: (result['success'] as bool?) == true
                                         ? Colors.green
                                         : Colors.red,
                                     fontFamily: 'monospace',
@@ -432,19 +447,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    RevolutCallbacksIos.initialize();
-    RevolutCallbacksIos.onLog = (logEntry) {
-      setState(() {
-        _logs.add(logEntry);
-        if (_logs.length > 100) _logs.removeAt(0);
-      });
-    };
-    RevolutCallbacksIos.onPaymentResult = (paymentResult) {
-      setState(() {
-        _paymentResults.add(paymentResult);
-        if (_paymentResults.length > 50) _paymentResults.removeAt(0);
-      });
-    };
     _initializeSDK();
   }
 
@@ -457,7 +459,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // Use the configuration from RevolutConfig
       final String merchantPublicKey = RevolutConfig.currentPublicKey;
 
-      final bool result = await RevolutSdkBridgeIos.initializeIos(
+      final bool result = await RevolutSdkBridge().initialize(
         merchantPublicKey: merchantPublicKey,
         environment: RevolutConfig
             .environment, // Use 'sandbox' for testing, 'production' for live payments
