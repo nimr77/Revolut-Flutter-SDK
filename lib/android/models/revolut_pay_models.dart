@@ -6,7 +6,7 @@ class CustomerData {
   final String? email;
   final String? phone;
   final DateOfBirthData? dateOfBirth;
-  final CountryData? country;
+  final String? country; // Now using string for country code
 
   const CustomerData({
     this.name,
@@ -22,7 +22,7 @@ class CustomerData {
       'email': email,
       'phone': phone,
       'dateOfBirth': dateOfBirth?.toMap(),
-      'country': country?.toMap(),
+      'country': country,
     };
   }
 
@@ -34,9 +34,7 @@ class CustomerData {
       dateOfBirth: map['dateOfBirth'] != null
           ? DateOfBirthData.fromMap(map['dateOfBirth'] as Map<String, dynamic>)
           : null,
-      country: map['country'] != null
-          ? CountryData.fromMap(map['country'] as Map<String, dynamic>)
-          : null,
+      country: map['country'] as String?,
     );
   }
 }
@@ -63,21 +61,6 @@ class DateOfBirthData {
       month: map['month'] as int,
       year: map['year'] as int,
     );
-  }
-}
-
-/// Country data structure
-class CountryData {
-  final String value; // ISO 3166 2-letter country code
-
-  const CountryData({required this.value});
-
-  Map<String, dynamic> toMap() {
-    return {'value': value};
-  }
-
-  factory CountryData.fromMap(Map<String, dynamic> map) {
-    return CountryData(value: map['value'] as String);
   }
 }
 
@@ -161,16 +144,39 @@ class VariantModesData {
 
 /// Promotional banner parameters data structure
 class PromoBannerParamsData {
-  final String? customParam;
+  final String transactionId;
+  final int paymentAmount;
+  final RevolutCurrency currency;
+  final CustomerData? customer;
 
-  const PromoBannerParamsData({this.customParam});
+  const PromoBannerParamsData({
+    required this.transactionId,
+    required this.paymentAmount,
+    required this.currency,
+    this.customer,
+  });
 
   Map<String, dynamic> toMap() {
-    return {'customParam': customParam};
+    return {
+      'transactionId': transactionId,
+      'paymentAmount': paymentAmount,
+      'currency': currency.value,
+      'customer': customer?.toMap(),
+    };
   }
 
   factory PromoBannerParamsData.fromMap(Map<String, dynamic> map) {
-    return PromoBannerParamsData(customParam: map['customParam'] as String?);
+    return PromoBannerParamsData(
+      transactionId: map['transactionId'] as String,
+      paymentAmount: map['paymentAmount'] as int,
+      currency: RevolutCurrency.values.firstWhere(
+        (e) => e.value == map['currency'],
+        orElse: () => RevolutCurrency.gbp,
+      ),
+      customer: map['customer'] != null
+          ? CustomerData.fromMap(map['customer'] as Map<String, dynamic>)
+          : null,
+    );
   }
 }
 
@@ -323,7 +329,7 @@ class SdkInitData {
     return SdkInitData(
       environment: RevolutEnvironment.values.firstWhere(
         (e) => e.value == map['environment'],
-        orElse: () => RevolutEnvironment.main,
+        orElse: () => RevolutEnvironment.sandbox,
       ),
       returnUri: map['returnUri'] as String,
       merchantPublicKey: map['merchantPublicKey'] as String,

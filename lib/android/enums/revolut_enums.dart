@@ -10,6 +10,7 @@ enum BoxText {
 
 /// Button radius options
 enum ButtonRadius {
+  none('NONE'),
   small('SMALL'),
   medium('MEDIUM'),
   large('LARGE');
@@ -20,6 +21,7 @@ enum ButtonRadius {
 
 /// Button size options
 enum ButtonSize {
+  extraSmall('EXTRA_SMALL'),
   small('SMALL'),
   medium('MEDIUM'),
   large('LARGE');
@@ -37,10 +39,29 @@ enum ButtonVariant {
   const ButtonVariant(this.value);
 }
 
+/// Country code options
+enum RevolutCountryCode {
+  gb('GB'),
+  us('US');
+
+  final String value;
+  const RevolutCountryCode(this.value);
+}
+
+/// Currency options for promotional banners
+enum RevolutCurrency {
+  gbp('GBP'),
+  eur('EUR'),
+  usd('USD');
+
+  final String value;
+  const RevolutCurrency(this.value);
+}
+
 /// Environment enum for SDK initialization
 enum RevolutEnvironment {
-  main('MAIN'),
-  sandbox('SANDBOX');
+  sandbox('SANDBOX'),
+  main('MAIN');
 
   final String value;
   const RevolutEnvironment(this.value);
