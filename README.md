@@ -1,479 +1,363 @@
-# Revolut SDK Bridge for Flutter
+# Revolut SDK Bridge
 
-A Flutter plugin that provides a bridge to the Revolut Pay iOS SDK, allowing you to integrate Revolut Pay payments into your Flutter applications with full customization capabilities.
+A Flutter plugin that provides a bridge to the native Revolut Pay SDK for both Android and iOS, allowing you to accept Revolut Pay payments in your Flutter apps.
 
 ## 🚀 Features
 
-- **Native Integration**: Uses the official Revolut Pay iOS SDK
-- **Full Customization**: Complete control over button appearance and behavior
-- **Cross-Platform**: iOS support with Android placeholder (ready for implementation)
-- **Real-Time Logging**: Comprehensive logging from native to Flutter
-- **Error Handling**: Robust error handling with custom error states
-- **Payment Lifecycle**: Full control over payment creation, completion, and cancellation
+- **Cross-platform support**: Works on both Android and iOS
+- **Full Revolut SDK integration**: Implements all major Revolut Pay SDK features
+- **Payment processing**: Handle payments with order tokens
+- **Button creation**: Create Revolut Pay buttons with customization
+- **Promotional banners**: Display promotional content to boost conversions
+- **Payment controllers**: Manage payment flows and confirmation processes
+- **Event handling**: Receive real-time updates on payment status
+- **Deep link support**: Handle payment returns seamlessly
 
 ## 📱 Supported Platforms
 
-- ✅ **iOS**: Full native integration with Revolut Pay SDK
-- 🔄 **Android**: Placeholder implementation (ready for Revolut Android SDK integration)
+- **Android**: API level 21+ (Android 5.0+)
+- **iOS**: iOS 13.0+
 
-## 🎨 Revolut Pay Button Customization
+## 🔧 Installation
 
-The `RevolutPayButton` widget provides full customization options with simple error handling:
-
-### Button Configuration
-```dart
-RevolutPayButton(
-  config: RevolutPayButtonConfig(
-    orderToken: 'your_order_token',
-    amount: 1000, // Amount in smallest currency unit (e.g., pence for GBP)
-    currency: 'GBP',
-    email: 'customer@example.com',
-    shouldRequestShipping: false,
-    savePaymentMethodForMerchant: false,
-    returnURL: 'your-app://revolut-pay',
-    merchantName: 'Your Merchant Name',
-    merchantLogoURL: 'https://your-logo.com/logo.png',
-    additionalData: {'custom_field': 'value'},
-  ),
-  style: RevolutPayButtonStyle(
-    height: 56,
-    width: double.infinity,
-    backgroundColor: Colors.blue,
-    textColor: Colors.white,
-    borderRadius: BorderRadius.circular(8),
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-  ),
-  loadingWidget: CustomLoadingWidget(),
-  placeholderWidget: CustomPlaceholderWidget(),
-  onPaymentResult: (result) {
-    print('Payment Result: ${result.success ? "Success" : "Failed"}');
-  },
-  onPaymentError: (error) {
-    print('Payment Error: $error');
-  },
-  onPaymentCancelled: () {
-    print('Payment Cancelled');
-  },
-  onButtonCreated: () {
-    print('Button Created');
-  },
-  onButtonError: () {
-    print('Button Error');
-  },
-  onError: (error) {
-    print('General Error: $error');
-    // Handle any errors yourself
-  },
-)
-```
-
-### 🚨 Simple Error Handling
-
-The button provides simple error callbacks - **you handle the errors yourself**:
-
-- **`onError(String error)`**: General error callback for any errors
-- **`onPaymentError(String error)`**: Payment-specific errors
-- **`onButtonError()`**: Button creation/operation errors
-
-**No complex state management** - just simple callbacks that you can handle however you want!
-
-### Visual Styling
-
-```dart
-RevolutPayButtonStyle(
-  height: 56,                               // Button height
-  width: double.infinity,                   // Button width
-  margin: EdgeInsets.symmetric(vertical: 8), // Button margins
-  padding: EdgeInsets.all(16),              // Button padding
-  borderRadius: BorderRadius.circular(12),   // Corner radius
-  border: Border.all(color: Colors.blue),   // Border styling
-  backgroundColor: Color(0xFF0000FF),       // Background color
-  textColor: Colors.white,                  // Text color
-  fontSize: 16,                             // Text size
-  fontWeight: FontWeight.w600,              // Text weight
-  fontFamily: 'Roboto',                     // Font family
-  boxShadow: [                              // Custom shadows
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.1),
-      blurRadius: 8,
-      offset: Offset(0, 2),
-    ),
-  ],
-)
-```
-
-### Custom State Widgets
-
-```dart
-RevolutPayButton(
-  loadingWidget: YourCustomLoadingWidget(),      // Custom loading state
-  errorWidget: YourCustomErrorWidget(),          // Custom error state
-  placeholderWidget: YourCustomPlaceholderWidget(), // Custom placeholder
-  // ... other configuration
-)
-```
-
-### Complete Example
-
-```dart
-RevolutPayButton(
-  config: RevolutPayButtonConfig(
-    orderToken: 'your_order_token',
-    amount: 1000,
-    currency: 'GBP',
-    email: 'customer@example.com',
-  ),
-  style: RevolutPayButtonStyle(
-    height: 56,
-    backgroundColor: Colors.blue,
-    borderRadius: BorderRadius.circular(12),
-  ),
-  loadingWidget: Container(
-    height: 56,
-    width: double.infinity,
-    decoration: BoxDecoration(
-      color: Colors.grey[200],
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          SizedBox(width: 12),
-          Text('Loading Revolut Pay...'),
-        ],
-      ),
-    ),
-  ),
-  errorWidget: Container(
-    height: 56,
-    width: double.infinity,
-    decoration: BoxDecoration(
-      color: Colors.red[50],
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.red[300]!),
-    ),
-    child: Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, color: Colors.red, size: 20),
-          SizedBox(width: 8),
-          Text(
-            'Failed to load button',
-            style: TextStyle(color: Colors.red),
-          ),
-        ],
-      ),
-    ),
-  ),
-  onPaymentResult: (result) {
-    print('Payment Result: ${result.success ? "Success" : "Failed"}');
-    // Handle payment result
-  },
-  onPaymentError: (error) {
-    print('Payment Error: $error');
-    // Handle payment error
-  },
-  onPaymentCancelled: () {
-    print('Payment Cancelled');
-    // Handle payment cancellation
-  },
-  onButtonCreated: () {
-    print('Revolut Pay button created successfully!');
-    // Handle button creation success
-  },
-  onButtonError: () {
-    print('Failed to create Revolut Pay button');
-    // Handle button creation error
-  },
-)
-
-// Control buttons for error recovery
-if (_buttonController.hasError || _buttonController.isLoading) ...[
-  Row(
-    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    children: [
-      ElevatedButton(
-        onPressed: _buttonController.retry,
-        child: Text('Retry'),
-      ),
-      ElevatedButton(
-        onPressed: _buttonController.reset,
-        child: Text('Reset'),
-      ),
-      ElevatedButton(
-        onPressed: _buttonController.refresh,
-        child: Text('Refresh'),
-      ),
-    ],
-  ),
-]
-```
-
-## 🔧 SDK Initialization
-
-Before using the Revolut Pay button, you must initialize the SDK:
-
-```dart
-// Initialize the SDK
-final bool result = await RevolutSdkBridge.initialize(
-  merchantPublicKey: 'your_merchant_public_key',
-  environment: 'sandbox', // or 'production'
-);
-
-if (result) {
-  print('SDK initialized successfully');
-} else {
-  print('SDK initialization failed');
-}
-```
-
-## 📊 Logging and Monitoring
-
-The plugin provides comprehensive logging from the native platform plugins to Flutter:
-
-```dart
-// Initialize the callback service
-RevolutCallbacks.initialize();
-
-// Listen to SDK logs
-RevolutCallbacks.onLog = (logEntry) {
-  print('SDK Log: $logEntry');
-  // logEntry.level: info, success, warning, error
-  // logEntry.message: log message
-  // logEntry.timestamp: when the log occurred
-  // logEntry.source: where the log came from
-};
-
-// Listen to payment results
-RevolutCallbacks.onPaymentResult = (paymentResult) {
-  print('Payment Result: $paymentResult');
-  // paymentResult.success: whether payment succeeded
-  // paymentResult.message: success/error message
-  // paymentResult.error: error details if failed
-  // paymentResult.timestamp: when the result occurred
-};
-```
-
-## 🏗️ Architecture
-
-### Flutter Layer
-- **`RevolutPayButton`**: Main widget with full customization
-- **`RevolutPayButtonConfig`**: Button configuration parameters
-- **`RevolutPayButtonStyle`**: Visual styling options
-- **`RevolutCallbacks`**: Callback service for platform communication
-
-### Platform Interface
-- **`RevolutSdkBridgePlatform`**: Abstract platform interface
-- **`MethodChannelRevolutSdkBridge`**: Platform implementations (iOS/Android)
-- **`RevolutSdkBridge`**: Main Flutter API
-
-### Native Platform Layer
-- **iOS**: `RevolutSdkBridgePlugin.swift` - Full native integration
-- **Android**: `RevolutSdkBridgePlugin.kt` - Placeholder for future implementation
-
-## 📁 Project Structure
-
-```
-revolut_sdk_bridge/
-├── lib/
-│   ├── widgets/
-│   │   └── revolut_pay_button.dart          # Main button widget
-│   ├── services/
-│   │   └── revolut_callbacks.dart           # Callback service for platform communication
-│   ├── revolut_sdk_bridge.dart              # Main API
-│   ├── revolut_sdk_bridge_method_channel.dart # Platform implementations
-│   └── revolut_sdk_bridge_platform_interface.dart # Platform interface
-├── ios/
-│   └── Classes/
-│       └── RevolutSdkBridgePlugin.swift     # iOS native plugin
-├── android/
-│   └── src/main/kotlin/
-│       └── RevolutSdkBridgePlugin.kt        # Android native plugin (placeholder)
-└── example/
-    └── lib/
-        └── main.dart                        # Example usage
-```
-
-## 🚀 Getting Started
-
-### 1. Add Dependency
+### 1. Add the dependency
 
 ```yaml
 dependencies:
-  revolut_sdk_bridge:
-    path: ../revolut_sdk_bridge
+  revolut_sdk_bridge: ^1.0.0
 ```
 
-### 2. Initialize SDK
+### 2. Platform-specific setup
 
-```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Revolut SDK
-  await RevolutSdkBridge.initialize(
-    merchantPublicKey: 'your_merchant_key',
-    environment: 'sandbox',
-  );
-  
-  runApp(MyApp());
+#### Android Setup
+
+1. **Add permissions** to `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+<!-- Declare Revolut app query -->
+<queries>
+    <package android:name="com.revolut.revolut" />
+</queries>
+
+<application>
+    <!-- Deep link configuration for payment return -->
+    <activity
+        android:name=".RevolutSdkBridgeActivity"
+        android:launchMode="singleTop"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data
+                android:host="payment-return"
+                android:scheme="revolutbridge" />
+        </intent-filter>
+    </activity>
+</application>
+```
+
+2. **Update build.gradle** to include Revolut SDK dependencies:
+
+```gradle
+dependencies {
+    implementation 'com.revolut:revolutpayments:1.0.0'
+    implementation 'com.revolut:revolutpay:2.8'
 }
 ```
 
-### 3. Add Button to UI
+#### iOS Setup
 
-```dart
-RevolutPayButton(
-  config: RevolutPayButtonConfig(
-    orderToken: 'your_order_token',
-    amount: 1000,
-    currency: 'GBP',
-    email: 'customer@example.com',
-  ),
-  style: RevolutPayButtonStyle(
-    height: 56,
-    backgroundColor: Colors.blue,
-    borderRadius: BorderRadius.circular(12),
-  ),
-  onPaymentResult: (result) {
-    // Handle payment result
-  },
-)
+1. **Update Podfile** to include Revolut SDK source:
+
+```ruby
+source 'https://github.com/CocoaPods/Specs.git'
+source 'https://github.com/revolut/ios-sdk.git'
+
+platform :ios, '13.0'
 ```
 
-## 🔍 Troubleshooting
+2. **Install pods**:
 
-### Common Issues
+```bash
+cd ios
+pod install
+cd ..
+```
 
-1. **Button not appearing**: Check if SDK is initialized and merchant key is valid
-2. **Payment not working**: Verify order token is valid and from your server
-3. **Styling not applied**: Ensure style parameters are correctly set
-4. **Build errors**: Make sure iOS deployment target is set correctly
+3. **Configure URL scheme** in `ios/Runner/Info.plist`:
 
-### Debug Logs
+```xml
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLName</key>
+        <string>com.yourcompany.yourapp</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>revolutbridge</string>
+        </array>
+    </dict>
+</array>
+```
 
-Enable logging to see what's happening:
+## 🚀 Quick Start
+
+### 1. Initialize the SDK
 
 ```dart
-RevolutCallbacks.initialize();
-RevolutCallbacks.onLog = (logEntry) {
-  print('Revolut SDK Log: $logEntry');
+import 'package:revolut_sdk_bridge/revolut_sdk_bridge.dart';
+
+// Initialize the Revolut SDK
+final sdkBridge = RevolutSdkBridge();
+
+try {
+  final initialized = await sdkBridge.initialize(
+    merchantPublicKey: 'your_merchant_public_key',
+    environment: 'sandbox', // or 'main' for production
+    returnUri: 'revolutbridge://payment-return',
+  );
+  
+  if (initialized) {
+    print('Revolut SDK initialized successfully');
+  }
+} catch (e) {
+  print('Failed to initialize Revolut SDK: $e');
+}
+```
+
+### 2. Create a Payment Button
+
+```dart
+// Create a Revolut Pay button
+final buttonResult = await sdkBridge.createPaymentButton(
+  orderToken: 'your_order_token',
+  amount: 1000, // Amount in minor units (e.g., 1000 for £10.00)
+  currency: 'GBP',
+  email: 'customer@example.com',
+  shouldRequestShipping: false,
+  savePaymentMethodForMerchant: false,
+);
+
+if (buttonResult != null) {
+  print('Button created: ${buttonResult['buttonId']}');
+}
+```
+
+### 3. Process a Payment
+
+```dart
+// Process a payment with an order token
+try {
+  final success = await sdkBridge.processPayment(
+    orderToken: 'your_order_token',
+    savePaymentMethodForMerchant: false,
+  );
+  
+  if (success) {
+    print('Payment initiated successfully');
+  }
+} catch (e) {
+  print('Payment failed: $e');
+}
+```
+
+### 4. Handle Payment Controllers
+
+```dart
+// Create a payment controller
+final controllerResult = await sdkBridge.createController();
+if (controllerResult != null) {
+  final controllerId = controllerResult['controllerId'];
+  
+  // Set order token on the controller
+  await sdkBridge.setOrderToken(
+    orderToken: 'your_order_token',
+    controllerId: controllerId,
+  );
+  
+  // Continue confirmation flow if needed
+  await sdkBridge.continueConfirmationFlow(controllerId: controllerId);
+  
+  // Dispose the controller when done
+  await sdkBridge.disposeController(controllerId: controllerId);
+}
+```
+
+### 5. Create Promotional Banners
+
+```dart
+// Create a promotional banner
+final bannerResult = await sdkBridge.providePromotionalBannerWidget(
+  promoParams: {
+    'transactionId': 'transaction_123',
+    'paymentAmount': 1000,
+    'currency': 'GBP',
+    'customer': {
+      'name': 'John Doe',
+      'email': 'john@example.com',
+      'phone': '+44123456789',
+      'country': 'GB',
+      'dateOfBirth': {
+        'day': 15,
+        'month': 6,
+        'year': 1990,
+      },
+    },
+  },
+  themeId: 'default',
+);
+
+if (bannerResult != null) {
+  print('Banner created: ${bannerResult['bannerId']}');
+}
+```
+
+## 📋 API Reference
+
+### Core Methods
+
+#### `initialize()`
+Initializes the Revolut SDK with your merchant configuration.
+
+**Parameters:**
+- `merchantPublicKey` (required): Your merchant public API key
+- `environment`: 'sandbox' or 'main' (default: 'sandbox')
+- `returnUri`: Deep link URI for payment returns
+- `requestShipping`: Whether to request shipping details
+- `customer`: Customer information for the payment
+
+#### `processPayment()`
+Initiates a payment flow with the given order token.
+
+**Parameters:**
+- `orderToken` (required): Order token from your server
+- `savePaymentMethodForMerchant`: Whether to save payment method
+
+#### `createPaymentButton()`
+Creates a Revolut Pay button for payment processing.
+
+**Parameters:**
+- `orderToken` (required): Order token for the payment
+- `amount` (required): Payment amount in minor units
+- `currency` (required): Payment currency (e.g., 'GBP', 'EUR', 'USD')
+- `email` (required): Customer email address
+- `shouldRequestShipping`: Whether to request shipping details
+- `savePaymentMethodForMerchant`: Whether to save payment method
+- `returnURL`: Custom return URL
+- `merchantName`: Merchant name to display
+- `merchantLogoURL`: URL to merchant logo
+- `additionalData`: Additional payment data
+
+### Controller Methods
+
+#### `createController()`
+Creates a payment controller for managing payment flows.
+
+#### `setOrderToken()`
+Sets the order token on a controller.
+
+#### `setSavePaymentMethodForMerchant()`
+Configures whether to save payment method for merchant.
+
+#### `continueConfirmationFlow()`
+Continues the confirmation flow on a controller.
+
+#### `disposeController()`
+Disposes a controller and cleans up resources.
+
+### Banner Methods
+
+#### `providePromotionalBannerWidget()`
+Creates a promotional banner widget to boost conversions.
+
+**Parameters:**
+- `promoParams`: Banner parameters including transaction details and customer info
+- `themeId`: Optional theme ID for styling
+
+### Utility Methods
+
+#### `getSdkVersion()`
+Returns SDK version information.
+
+#### `getPlatformVersion()`
+Returns the current platform version.
+
+## 🔗 Deep Link Configuration
+
+The plugin automatically handles deep link returns from Revolut Pay. Configure your deep link scheme in the platform-specific files:
+
+- **Android**: `revolutbridge://payment-return`
+- **iOS**: `revolutbridge://payment-return`
+
+## 📊 Event Handling
+
+The plugin provides real-time event updates through callbacks:
+
+```dart
+// Set up event callbacks
+sdkBridge.onOrderCompleted = (orderId) {
+  print('Payment completed: $orderId');
+};
+
+sdkBridge.onOrderFailed = (orderId, error) {
+  print('Payment failed: $orderId - $error');
+};
+
+sdkBridge.onUserPaymentAbandoned = () {
+  print('User abandoned payment');
 };
 ```
 
-## 📚 API Reference
+## 🧪 Testing
 
-### RevolutSdkBridge
+### Sandbox Environment
+- Use `environment: 'sandbox'` for testing
+- Test with sandbox order tokens
+- No real money is processed
 
-Main class for the Revolut SDK Bridge plugin.
+### Production Environment
+- Use `environment: 'main'` for live payments
+- Ensure you have valid production credentials
+- Test thoroughly before going live
 
-**Methods:**
-- `initialize(merchantPublicKey, environment)`: Initialize the SDK
-- `createRevolutPayButton(config)`: Create a Revolut Pay button
-- `cleanupButton(viewId)`: Clean up a specific button
-- `cleanupAllButtons()`: Clean up all buttons
-- `getPlatformVersion()`: Get platform version
+## 📝 Example Usage
 
-**Example:**
-```dart
-// Initialize SDK
-await RevolutSdkBridge.initialize(
-  merchantPublicKey: 'your_key',
-  environment: 'sandbox',
-);
+See the `example/` directory for a complete working example that demonstrates:
 
-// Create button
-final result = await RevolutSdkBridge.createRevolutPayButton(/* config */);
+- SDK initialization
+- Payment button creation
+- Payment processing
+- Event handling
+- Error handling
 
-// Clean up specific button
-await RevolutSdkBridge.cleanupButton(result['viewId']);
+## 🚨 Important Notes
 
-// Clean up all buttons
-await RevolutSdkBridge.cleanupAllButtons();
-```
+1. **Never expose your secret API key** in client-side code
+2. **Always create orders on your server** using the Merchant API
+3. **Handle payment results securely** through webhooks
+4. **Test thoroughly** in sandbox before going live
+5. **Follow Revolut's design guidelines** for buttons and branding
 
-### RevolutPayButton
+## 🔒 Security
 
-The main widget for displaying Revolut Pay buttons.
+- Merchant public keys are safe to include in client apps
+- Secret keys must remain on your server
+- Use HTTPS for all API communications
+- Validate all payment results on your server
 
-**Properties:**
-- `config`: Button configuration parameters
-- `style`: Visual styling options
-- `loadingWidget`: Custom loading widget
-- `placeholderWidget`: Custom placeholder widget
-- `onPaymentResult`: Payment result callback
-- `onPaymentError`: Payment error callback
-- `onPaymentCancelled`: Payment cancellation callback
-- `onButtonCreated`: Button creation callback
-- `onButtonError`: Button error callback
-- `onError`: General error callback
+## 📚 Additional Resources
 
-**Example:**
-```dart
-RevolutPayButton(
-  config: RevolutPayButtonConfig(/* ... */),
-  style: RevolutPayButtonStyle(/* ... */),
-  onPaymentResult: (result) {
-    print('Payment: ${result.success}');
-  },
-  onError: (error) {
-    print('Error: $error');
-    // Handle error yourself
-  },
-)
-```
-
-### RevolutPayButtonConfig
-
-Configuration for the Revolut Pay button.
-
-**Required Properties:**
-- `orderToken`: Order token from your server
-- `amount`: Payment amount in minor units
-- `currency`: Payment currency code
-- `email`: Customer email address
-
-**Optional Properties:**
-- `shouldRequestShipping`: Request shipping details
-- `savePaymentMethodForMerchant`: Save payment method
-- `returnURL`: Custom return URL
-- `merchantName`: Merchant name
-- `merchantLogoURL`: Merchant logo URL
-- `additionalData`: Custom data
-
-### RevolutPayButtonStyle
-
-Visual styling for the button.
-
-**Properties:**
-- `height`: Button height
-- `width`: Button width
-- `margin`: Button margins
-- `padding`: Button padding
-- `borderRadius`: Corner radius
-- `border`: Border styling
-- `backgroundColor`: Background color
-- `textColor`: Text color
-- `fontSize`: Text size
-- `fontWeight`: Text weight
-- `fontFamily`: Font family
-- `boxShadow`: Custom shadows
+- [Revolut Developer Documentation](https://developer.revolut.com/)
+- [Revolut Pay Button Guidelines](https://developer.revolut.com/docs/guides/accept-payments/payment-methods/revolut-pay/button-guidelines)
+- [Merchant API Reference](https://developer.revolut.com/docs/merchant-api)
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
@@ -481,19 +365,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-For issues and questions:
-1. Check the troubleshooting section
-2. Review the example app
+If you encounter any issues or have questions:
+
+1. Check the [example app](example/) for usage patterns
+2. Review the [Revolut documentation](https://developer.revolut.com/)
 3. Open an issue on GitHub
-4. Check Revolut Pay documentation
-
-## 🔗 Links
-
-- [Revolut Pay Developer Documentation](https://developer.revolut.com/docs/guides/accept-payments/payment-methods/revolut-pay)
-- [Flutter Documentation](https://flutter.dev/docs)
-- [iOS Platform Views](https://flutter.dev/docs/development/platform-integration/platform-views)
+4. Contact Revolut support for API-related questions
 
 ---
 
-**Note**: This plugin requires the Revolut Pay iOS SDK to be properly configured in your iOS project. Make sure you have the necessary dependencies and configurations set up according to the Revolut Pay documentation.
+**Note**: This plugin is not officially affiliated with Revolut. It's a community-maintained bridge to the official Revolut Pay SDK.
 

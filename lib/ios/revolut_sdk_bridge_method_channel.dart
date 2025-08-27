@@ -28,6 +28,47 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
     return result is bool ? result : false;
   }
 
+  /// Continue confirmation flow on a controller
+  @override
+  Future<bool> continueConfirmationFlowIos({
+    required String controllerId,
+  }) async {
+    try {
+      final dynamic result = await methodChannel.invokeMethod(
+        'continueConfirmationFlow',
+        {'controllerId': controllerId},
+      );
+      return result is bool ? result : false;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
+  /// Create a payment controller
+  @override
+  Future<Map<String, dynamic>?> createControllerIos() async {
+    try {
+      final dynamic result = await methodChannel.invokeMethod(
+        'createController',
+        {},
+      );
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+      return null;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
   @override
   Future<Map<String, dynamic>?> createRevolutPayButtonIos({
     required String orderToken,
@@ -60,6 +101,24 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
     return null;
   }
 
+  /// Dispose a controller
+  @override
+  Future<bool> disposeControllerIos({required String controllerId}) async {
+    try {
+      final dynamic result = await methodChannel.invokeMethod(
+        'disposeController',
+        {'controllerId': controllerId},
+      );
+      return result is bool ? result : false;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
   @override
   Future<String?> getPlatformVersionIos() async {
     try {
@@ -70,6 +129,27 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
       // Convert the result to the expected type
       if (version is String) {
         return version;
+      }
+      return null;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
+  /// Get SDK version information
+  @override
+  Future<Map<String, dynamic>?> getSdkVersionIos() async {
+    try {
+      final dynamic result = await methodChannel.invokeMethod(
+        'getSdkVersion',
+        {},
+      );
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
       }
       return null;
     } on PlatformException catch (e) {
@@ -97,6 +177,97 @@ class MethodChannelRevolutSdkBridge extends RevolutSdkBridgePlatform {
         return result;
       }
       return false;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
+  /// Process a payment with the given order token
+  @override
+  Future<Map<String, dynamic>?> payIos({
+    required String orderToken,
+    bool savePaymentMethodForMerchant = false,
+  }) async {
+    try {
+      final dynamic result = await methodChannel.invokeMethod('pay', {
+        'orderToken': orderToken,
+        'savePaymentMethodForMerchant': savePaymentMethodForMerchant,
+      });
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+      return null;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
+  /// Provide promotional banner widget
+  @override
+  Future<Map<String, dynamic>?> providePromotionalBannerWidgetIos({
+    required Map<String, dynamic> promoParams,
+    String? themeId,
+  }) async {
+    try {
+      final dynamic result = await methodChannel.invokeMethod(
+        'providePromotionalBannerWidget',
+        {'promoParams': promoParams, 'themeId': themeId},
+      );
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+      return null;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
+  /// Set order token on a controller
+  @override
+  Future<bool> setOrderTokenIos({
+    required String orderToken,
+    required String controllerId,
+  }) async {
+    try {
+      final dynamic result = await methodChannel.invokeMethod('setOrderToken', {
+        'orderToken': orderToken,
+        'controllerId': controllerId,
+      });
+      return result is bool ? result : false;
+    } on PlatformException catch (e) {
+      throw RevolutSdkException(
+        code: e.code,
+        message: e.message ?? 'Unknown error occurred',
+        details: e.details,
+      );
+    }
+  }
+
+  /// Set save payment method for merchant on a controller
+  @override
+  Future<bool> setSavePaymentMethodForMerchantIos({
+    required bool savePaymentMethodForMerchant,
+    required String controllerId,
+  }) async {
+    try {
+      final dynamic result = await methodChannel
+          .invokeMethod('setSavePaymentMethodForMerchant', {
+            'savePaymentMethodForMerchant': savePaymentMethodForMerchant,
+            'controllerId': controllerId,
+          });
+      return result is bool ? result : false;
     } on PlatformException catch (e) {
       throw RevolutSdkException(
         code: e.code,

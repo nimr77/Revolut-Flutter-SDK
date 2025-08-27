@@ -88,48 +88,48 @@ class CrossPlatformTest extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Simple button test
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Simple Button Test',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 16),
-                    CrossPlatformSimpleRevolutPayButton(
-                      orderToken: 'test_simple_token',
-                      amount: 500,
-                      currency: 'EUR',
-                      email: 'simple@example.com',
-                      size: ButtonSize.medium,
-                      radius: ButtonRadius.small,
-                      showCashback: true,
-                      cashbackCurrency: 'EUR',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Simple button pressed!'),
-                            backgroundColor: Colors.blue,
-                          ),
-                        );
-                      },
-                      onError: (error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: $error'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // // Simple button test
+            // Card(
+            //   child: Padding(
+            //     padding: const EdgeInsets.all(16.0),
+            //     child: Column(
+            //       crossAxisAlignment: CrossAxisAlignment.start,
+            //       children: [
+            //         Text(
+            //           'Simple Button Test',
+            //           style: Theme.of(context).textTheme.headlineSmall,
+            //         ),
+            //         const SizedBox(height: 16),
+            //         // CrossPlatformSimpleRevolutPayButton(
+            //         //   orderToken: 'test_simple_token',
+            //         //   amount: 500,
+            //         //   currency: 'EUR',
+            //         //   email: 'simple@example.com',
+            //         //   size: ButtonSize.medium,
+            //         //   radius: ButtonRadius.small,
+            //         //   showCashback: true,
+            //         //   cashbackCurrency: 'EUR',
+            //         //   onPressed: () {
+            //         //     ScaffoldMessenger.of(context).showSnackBar(
+            //         //       const SnackBar(
+            //         //         content: Text('Simple button pressed!'),
+            //         //         backgroundColor: Colors.blue,
+            //         //       ),
+            //         //     );
+            //         //   },
+            //         //   onError: (error) {
+            //         //     ScaffoldMessenger.of(context).showSnackBar(
+            //         //       SnackBar(
+            //         //         content: Text('Error: $error'),
+            //         //         backgroundColor: Colors.red,
+            //         //       ),
+            //         //     );
+            //         //   },
+            //         // ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),

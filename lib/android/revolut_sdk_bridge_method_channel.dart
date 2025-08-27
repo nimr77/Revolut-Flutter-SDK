@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -149,12 +150,21 @@ class RevolutSdkBridgeMethodChannel {
   /// Gets the SDK version
   Future<Map<String, dynamic>> getSdkVersion() async {
     try {
+      debugPrint('Invoking getSdkVersion method...');
       final result = await _channel.invokeMethod('getSdkVersion');
+      debugPrint('getSdkVersion raw result: $result');
+      debugPrint('getSdkVersion result type: ${result.runtimeType}');
 
       if (result is Map<String, dynamic>) {
+        debugPrint(
+          'getSdkVersion result is Map with keys: ${result.keys.toList()}',
+        );
         return result;
       }
-      throw FormatException('Invalid response format from native side');
+      debugPrint('getSdkVersion result is not Map, throwing FormatException');
+      throw FormatException(
+        'Invalid response format from native side. Expected Map<String, dynamic>, got ${result.runtimeType}',
+      );
     } on PlatformException catch (e) {
       debugPrint(
         'Platform exception during getSdkVersion: ${e.code} - ${e.message}',
@@ -189,7 +199,7 @@ class RevolutSdkBridgeMethodChannel {
       if (result is bool) {
         _isInitialized = result;
         return result;
-      } else if (result is Map<String, dynamic>) {
+      } else if (result is Map) {
         final success = result['success'] as bool? ?? false;
         _isInitialized = success;
         return success;
@@ -351,16 +361,35 @@ class RevolutSdkBridgeMethodChannel {
 
   /// Handles events received from the native side
   void _handleNativeEvent(dynamic event) {
+    if (event is String) {
+      try {
+        final json = jsonDecode(event);
+        _handleNativeEvent(json);
+      } catch (_) {}
+    }
+    if (event is Map<Object?, Object?> && event is! Map<String, dynamic>) {
+      try {
+        final castedMap = event.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        _handleNativeEvent(Map<String, dynamic>.from(castedMap));
+        return;
+      } catch (e) {
+        debugPrint('Error handling native event map: $e');
+      }
+    }
     try {
       if (event is! Map<String, dynamic>) {
-        debugPrint('Invalid event format received: $event');
+        debugPrint(
+          'Invalid event format received: $event with type of ${event.runtimeType}',
+        );
         return;
       }
 
       final methodName = event['method'] as String?;
-      final data = event['data'] as Map<String, dynamic>?;
+      final data = Map<String, dynamic>.from(event['data']);
 
-      if (methodName == null || data == null) {
+      if (methodName == null) {
         debugPrint('Invalid event structure: $event');
         return;
       }

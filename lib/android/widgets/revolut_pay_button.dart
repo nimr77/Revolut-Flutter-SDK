@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../enums/revolut_enums.dart';
 import '../models/revolut_pay_models.dart';
 
 /// A Flutter widget that displays a Revolut Pay button using the native Android SDK
@@ -87,62 +86,6 @@ class RevolutPayPromoBanner extends StatefulWidget {
 
   @override
   State<RevolutPayPromoBanner> createState() => _RevolutPayPromoBannerState();
-}
-
-/// A simplified Revolut Pay button with default styling
-class SimpleRevolutPayButton extends StatelessWidget {
-  /// Order token for payment processing
-  final String orderToken;
-
-  /// Callback when button is clicked
-  final VoidCallback? onPressed;
-
-  /// Callback when button creation fails
-  final Function(String error)? onError;
-
-  /// Button size
-  final ButtonSize size;
-
-  /// Button radius
-  final ButtonRadius radius;
-
-  /// Whether to show cashback information
-  final bool showCashback;
-
-  /// Currency for cashback display
-  final String? cashbackCurrency;
-
-  const SimpleRevolutPayButton({
-    super.key,
-    required this.orderToken,
-    this.onPressed,
-    this.onError,
-    this.size = ButtonSize.large,
-    this.radius = ButtonRadius.medium,
-    this.showCashback = false,
-    this.cashbackCurrency,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final buttonParams = ButtonParamsData(
-      size: size,
-      radius: radius,
-      boxText: showCashback ? BoxText.getCashbackValue : BoxText.none,
-      boxTextCurrency: showCashback ? cashbackCurrency : null,
-    );
-
-    return RevolutPayButton(
-      buttonParams: buttonParams,
-      orderToken: orderToken,
-      onPressed: onPressed,
-      onError: onError,
-      width: double.infinity,
-      height: 56.0,
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8.0)),
-    );
-  }
 }
 
 class _RevolutPayButtonState extends State<RevolutPayButton> {
@@ -281,8 +224,8 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
         'buttonParams': widget.buttonParams?.toMap(),
       });
 
-      if (result is Map<String, dynamic>) {
-        final buttonCreated = result['buttonCreated'] as bool? ?? false;
+      if (result is Map) {
+        final buttonCreated = result['success'] as bool? ?? false;
         if (buttonCreated) {
           _buttonId = result['buttonId'] as String?;
           _isButtonCreated = true;

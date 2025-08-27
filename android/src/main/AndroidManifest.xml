@@ -7,4 +7,26 @@
   <!-- Network state permission for Revolut SDK -->
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+  <!-- Declare Revolut app query to allow SDK to check if Revolut app is installed -->
+  <queries>
+    <package android:name="com.revolut.revolut" />
+  </queries>
+
+  <application>
+    <!-- Deep link configuration for payment return -->
+    <activity
+      android:name=".RevolutSdkBridgeActivity"
+      android:launchMode="singleTop"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data
+          android:host="payment-return"
+          android:scheme="revolutbridge" />
+      </intent-filter>
+    </activity>
+  </application>
+
 </manifest>

@@ -205,66 +205,7 @@ class CrossPlatformRevolutPayPromoBanner extends StatelessWidget {
   }
 }
 
-/// Cross-platform simple Revolut Pay button
-class CrossPlatformSimpleRevolutPayButton extends StatelessWidget {
-  final String orderToken;
-  final int amount;
-  final String currency;
-  final String email;
-  final ButtonSize size;
-  final ButtonRadius radius;
-  final bool showCashback;
-  final String? cashbackCurrency;
-  final VoidCallback? onPressed;
-  final Function(String)? onError;
-
-  const CrossPlatformSimpleRevolutPayButton({
-    super.key,
-    required this.orderToken,
-    required this.amount,
-    required this.currency,
-    required this.email,
-    this.size = ButtonSize.large,
-    this.radius = ButtonRadius.medium,
-    this.showCashback = false,
-    this.cashbackCurrency,
-    this.onPressed,
-    this.onError,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (Platform.isAndroid) {
-      // Use Android implementation
-      return android.SimpleRevolutPayButton(
-        orderToken: orderToken,
-        onPressed: onPressed,
-        onError: onError,
-        size: size,
-        radius: radius,
-        showCashback: showCashback,
-        cashbackCurrency: cashbackCurrency,
-      );
-    } else {
-      // Use iOS implementation with simplified configuration
-      return CrossPlatformRevolutPayButton(
-        orderToken: orderToken,
-        amount: amount,
-        currency: currency,
-        email: email,
-        onPressed: onPressed,
-        onError: onError,
-        height: size == ButtonSize.large ? 56.0 : 48.0,
-        width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        borderRadius: BorderRadius.circular(
-          radius == ButtonRadius.none ? 0 : 8.0,
-        ),
-      );
-    }
-  }
-}
-
+//
 /// Cross-platform Revolut SDK Bridge
 /// Automatically selects the appropriate platform implementation
 class RevolutSdkBridge {
@@ -330,17 +271,46 @@ class RevolutSdkBridge {
     }
   }
 
-  /// Create a controller for managing confirmation flows (Android only)
-  Future<ControllerResultData?> createController() async {
+  /// Continue confirmation flow on a controller
+  ///
+  /// [controllerId] - ID of the controller to continue with
+  ///
+  /// Returns true if successful
+  Future<bool> continueConfirmationFlow({required String controllerId}) async {
     try {
       if (isAndroid) {
         // Android implementation
         return await android.RevolutSdkBridgeMethodChannel(
           android.RevolutCallbacks(),
-        ).createController();
+        ).continueConfirmationFlow(controllerId: controllerId);
       } else if (isIOS) {
-        // iOS doesn't support controllers
-        throw UnsupportedError('Controllers not supported on iOS');
+        // iOS implementation
+        return await ios.RevolutSdkBridgeIos.continueConfirmationFlowIos(
+          controllerId: controllerId,
+        );
+      } else {
+        throw UnsupportedError('Platform not supported');
+      }
+    } catch (e) {
+      debugPrint('Failed to continue confirmation flow: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a payment controller
+  ///
+  /// Returns a Map with controller details
+  Future<Map<String, dynamic>?> createController() async {
+    try {
+      if (isAndroid) {
+        // Android implementation
+        final result = await android.RevolutSdkBridgeMethodChannel(
+          android.RevolutCallbacks(),
+        ).createController();
+        return result.toMap();
+      } else if (isIOS) {
+        // iOS implementation
+        return await ios.RevolutSdkBridgeIos.createControllerIos();
       } else {
         throw UnsupportedError('Platform not supported');
       }
@@ -440,6 +410,32 @@ class RevolutSdkBridge {
     }
   }
 
+  /// Dispose a controller
+  ///
+  /// [controllerId] - ID of the controller to dispose
+  ///
+  /// Returns true if successful
+  Future<bool> disposeController({required String controllerId}) async {
+    try {
+      if (isAndroid) {
+        // Android implementation
+        return await android.RevolutSdkBridgeMethodChannel(
+          android.RevolutCallbacks(),
+        ).disposeController(controllerId: controllerId);
+      } else if (isIOS) {
+        // iOS implementation
+        return await ios.RevolutSdkBridgeIos.disposeControllerIos(
+          controllerId: controllerId,
+        );
+      } else {
+        throw UnsupportedError('Platform not supported');
+      }
+    } catch (e) {
+      debugPrint('Failed to dispose controller: $e');
+      rethrow;
+    }
+  }
+
   /// Get the platform version
   Future<String> getPlatformVersion() async {
     try {
@@ -496,7 +492,9 @@ class RevolutSdkBridge {
     }
   }
 
-  /// Get the SDK version (Android only)
+  /// Get SDK version information
+  ///
+  /// Returns a Map with SDK version details
   Future<Map<String, dynamic>?> getSdkVersion() async {
     try {
       if (isAndroid) {
@@ -505,8 +503,8 @@ class RevolutSdkBridge {
           android.RevolutCallbacks(),
         ).getSdkVersion();
       } else if (isIOS) {
-        // iOS doesn't have SDK version method
-        return null;
+        // iOS implementation
+        return await ios.RevolutSdkBridgeIos.getSdkVersionIos();
       } else {
         throw UnsupportedError('Platform not supported');
       }
@@ -590,15 +588,118 @@ class RevolutSdkBridge {
           savePaymentMethodForMerchant: savePaymentMethodForMerchant,
         );
       } else if (isIOS) {
-        // iOS doesn't have a direct pay method, payment is handled by the button
-        throw UnsupportedError(
-          'Direct payment processing not supported on iOS. Use the payment button instead.',
+        // iOS implementation
+        final result = await ios.RevolutSdkBridgeIos.payIos(
+          orderToken: orderToken,
+          savePaymentMethodForMerchant: savePaymentMethodForMerchant,
         );
+        return result != null;
       } else {
         throw UnsupportedError('Platform not supported');
       }
     } catch (e) {
       debugPrint('Failed to process payment: $e');
+      rethrow;
+    }
+  }
+
+  /// Provide promotional banner widget
+  ///
+  /// [promoParams] - Parameters for the promotional banner
+  /// [themeId] - Optional theme ID for styling
+  ///
+  /// Returns a Map with banner details
+  Future<Map<String, dynamic>?> providePromotionalBannerWidget({
+    required Map<String, dynamic> promoParams,
+    String? themeId,
+  }) async {
+    try {
+      if (isAndroid) {
+        // Android implementation
+        final result =
+            await android.RevolutSdkBridgeMethodChannel(
+              android.RevolutCallbacks(),
+            ).providePromotionalBannerWidget(
+              promoParams: promoParams,
+              themeId: themeId,
+            );
+        return result.toMap();
+      } else if (isIOS) {
+        // iOS implementation
+        return await ios.RevolutSdkBridgeIos.providePromotionalBannerWidgetIos(
+          promoParams: promoParams,
+          themeId: themeId,
+        );
+      } else {
+        throw UnsupportedError('Platform not supported');
+      }
+    } catch (e) {
+      debugPrint('Failed to provide promotional banner: $e');
+      rethrow;
+    }
+  }
+
+  /// Set order token on a controller
+  ///
+  /// [orderToken] - Order token to set on the controller
+  /// [controllerId] - ID of the controller to update
+  ///
+  /// Returns true if successful
+  Future<bool> setOrderToken({
+    required String orderToken,
+    required String controllerId,
+  }) async {
+    try {
+      if (isAndroid) {
+        // Android implementation
+        return await android.RevolutSdkBridgeMethodChannel(
+          android.RevolutCallbacks(),
+        ).setOrderToken(orderToken: orderToken, controllerId: controllerId);
+      } else if (isIOS) {
+        // iOS implementation
+        return await ios.RevolutSdkBridgeIos.setOrderTokenIos(
+          orderToken: orderToken,
+          controllerId: controllerId,
+        );
+      } else {
+        throw UnsupportedError('Platform not supported');
+      }
+    } catch (e) {
+      debugPrint('Failed to set order token: $e');
+      rethrow;
+    }
+  }
+
+  /// Set save payment method for merchant on a controller
+  ///
+  /// [savePaymentMethodForMerchant] - Whether to save payment method for merchant
+  /// [controllerId] - ID of the controller to update
+  ///
+  /// Returns true if successful
+  Future<bool> setSavePaymentMethodForMerchant({
+    required bool savePaymentMethodForMerchant,
+    required String controllerId,
+  }) async {
+    try {
+      if (isAndroid) {
+        // Android implementation
+        return await android.RevolutSdkBridgeMethodChannel(
+          android.RevolutCallbacks(),
+        ).setSavePaymentMethodForMerchant(
+          savePaymentMethodForMerchant: savePaymentMethodForMerchant,
+          controllerId: controllerId,
+        );
+      } else if (isIOS) {
+        // iOS implementation
+        return await ios.RevolutSdkBridgeIos.setSavePaymentMethodForMerchantIos(
+          savePaymentMethodForMerchant: savePaymentMethodForMerchant,
+          controllerId: controllerId,
+        );
+      } else {
+        throw UnsupportedError('Platform not supported');
+      }
+    } catch (e) {
+      debugPrint('Failed to set save payment method: $e');
       rethrow;
     }
   }

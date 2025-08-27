@@ -34,6 +34,18 @@ abstract class RevolutSdkBridgePlatform extends PlatformInterface {
     throw UnimplementedError('cleanupButtonIos() has not been implemented.');
   }
 
+  /// Continue confirmation flow on a controller
+  Future<bool> continueConfirmationFlowIos({required String controllerId}) {
+    throw UnimplementedError(
+      'continueConfirmationFlowIos() has not been implemented.',
+    );
+  }
+
+  /// Create a payment controller
+  Future<Map<String, dynamic>?> createControllerIos() {
+    throw UnimplementedError('createControllerIos() has not been implemented.');
+  }
+
   /// Create a Revolut Pay button for payment processing
   Future<Map<String, dynamic>?> createRevolutPayButtonIos({
     required String orderToken,
@@ -52,11 +64,23 @@ abstract class RevolutSdkBridgePlatform extends PlatformInterface {
     );
   }
 
+  /// Dispose a controller
+  Future<bool> disposeControllerIos({required String controllerId}) {
+    throw UnimplementedError(
+      'disposeControllerIos() has not been implemented.',
+    );
+  }
+
   /// Get platform version (for debugging)
   Future<String?> getPlatformVersionIos() {
     throw UnimplementedError(
       'getPlatformVersionIos() has not been implemented.',
     );
+  }
+
+  /// Get SDK version information
+  Future<Map<String, dynamic>?> getSdkVersionIos() {
+    throw UnimplementedError('getSdkVersionIos() has not been implemented.');
   }
 
   /// Initialize the Revolut Pay SDK with configuration
@@ -65,5 +89,41 @@ abstract class RevolutSdkBridgePlatform extends PlatformInterface {
     String? environment,
   }) {
     throw UnimplementedError('initializeIos() has not been implemented.');
+  }
+
+  /// Process a payment with the given order token
+  Future<Map<String, dynamic>?> payIos({
+    required String orderToken,
+    bool savePaymentMethodForMerchant = false,
+  }) {
+    throw UnimplementedError('payIos() has not been implemented.');
+  }
+
+  /// Provide promotional banner widget
+  Future<Map<String, dynamic>?> providePromotionalBannerWidgetIos({
+    required Map<String, dynamic> promoParams,
+    String? themeId,
+  }) {
+    throw UnimplementedError(
+      'providePromotionalBannerWidgetIos() has not been implemented.',
+    );
+  }
+
+  /// Set order token on a controller
+  Future<bool> setOrderTokenIos({
+    required String orderToken,
+    required String controllerId,
+  }) {
+    throw UnimplementedError('setOrderTokenIos() has not been implemented.');
+  }
+
+  /// Set save payment method for merchant on a controller
+  Future<bool> setSavePaymentMethodForMerchantIos({
+    required bool savePaymentMethodForMerchant,
+    required String controllerId,
+  }) {
+    throw UnimplementedError(
+      'setSavePaymentMethodForMerchantIos() has not been implemented.',
+    );
   }
 }

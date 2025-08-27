@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'enums/revolut_enums.dart';
 import 'models/revolut_pay_models.dart';
@@ -343,9 +342,14 @@ class _RevolutSdkExampleState extends State<RevolutSdkExample> {
   /// Get SDK version information
   Future<void> _getSdkVersion() async {
     try {
+      debugPrint('Calling getSdkVersion...');
       final versionInfo = await _sdkBridge.getSdkVersion();
+      debugPrint('getSdkVersion response: $versionInfo');
+      debugPrint('Response type: ${versionInfo.runtimeType}');
+      debugPrint('Response is Map with keys: ${versionInfo.keys.toList()}');
       _showSnackBar('SDK Version: ${versionInfo['version']}');
     } catch (e) {
+      debugPrint('Error during getSdkVersion: $e');
       _showSnackBar('Error getting SDK version: $e');
     }
   }

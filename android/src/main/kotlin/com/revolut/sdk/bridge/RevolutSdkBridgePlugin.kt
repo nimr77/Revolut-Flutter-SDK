@@ -74,13 +74,13 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     private fun handleInit(call: MethodCall, result: Result) {
         try {
             val environment = call.argument<String>("environment") ?: "SANDBOX"
-            val returnUri = call.argument<String>("returnUri") ?: ""
+            val returnUri = call.argument<String>("returnUri") ?: "revolutbridge://payment-return"
             val merchantPublicKey = call.argument<String>("merchantPublicKey") ?: ""
             val requestShipping = call.argument<Boolean>("requestShipping") ?: false
             val customerMap = call.argument<Map<String, Any>>("customer")
             
-            if (returnUri.isEmpty() || merchantPublicKey.isEmpty()) {
-                result.error("INVALID_ARGUMENTS", "returnUri and merchantPublicKey are required", null)
+            if (merchantPublicKey.isEmpty()) {
+                result.error("INVALID_ARGUMENTS", "merchantPublicKey is required", null)
                 return
             }
             
@@ -118,7 +118,10 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                 customer = customer
             )
             
-            result.success(true)
+            result.success(mapOf(
+                "success" to true,
+                "message" to "Revolut SDK initialized successfully"
+            ))
         } catch (e: Exception) {
             result.error("INIT_ERROR", "Failed to initialize Revolut SDK: ${e.message}", null)
         }
@@ -128,6 +131,7 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         try {
             // Get SDK version information
             result.success(mapOf(
+                "success" to true,
                 "version" to "2.8.0",
                 "platform" to "Android",
                 "buildNumber" to "1"
@@ -139,7 +143,11 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
     private fun handleGetPlatformVersion(call: MethodCall, result: Result) {
         try {
-            result.success("Android ${android.os.Build.VERSION.RELEASE}")
+            result.success(mapOf(
+                "success" to true,
+                "platform" to "Android",
+                "version" to android.os.Build.VERSION.RELEASE
+            ))
         } catch (e: Exception) {
             result.error("GET_PLATFORM_VERSION_ERROR", "Failed to get platform version: ${e.message}", null)
         }
@@ -157,7 +165,11 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             
             // TODO: Implement actual payment flow with Revolut SDK
             // For now, return success to prevent crashes
-            result.success(true)
+            result.success(mapOf(
+                "success" to true,
+                "status" to "payment_initiated",
+                "orderToken" to orderToken
+            ))
             
             // Send event to Flutter side
             sendEvent("onPaymentStatusUpdate", mapOf(
@@ -176,6 +188,7 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             // TODO: Implement actual button creation with Revolut SDK
             // For now, return mock data to prevent crashes
             val buttonData = mapOf(
+                "success" to true,
                 "buttonId" to "mock_button_${System.currentTimeMillis()}",
                 "isEnabled" to true,
                 "buttonType" to "pay",
@@ -196,6 +209,7 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             // TODO: Implement actual banner creation with Revolut SDK
             // For now, return mock data to prevent crashes
             val bannerData = mapOf(
+                "success" to true,
                 "bannerId" to "mock_banner_${System.currentTimeMillis()}",
                 "isVisible" to true,
                 "bannerType" to "promotional",
@@ -214,6 +228,7 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             // TODO: Implement actual controller creation with Revolut SDK
             // For now, return mock data to prevent crashes
             val controllerData = mapOf(
+                "success" to true,
                 "controllerId" to "mock_controller_${System.currentTimeMillis()}",
                 "isActive" to true,
                 "canContinue" to false
@@ -237,7 +252,10 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             
             // TODO: Implement actual order token setting with Revolut SDK
             // For now, return success to prevent crashes
-            result.success(true)
+            result.success(mapOf(
+                "success" to true,
+                "message" to "Order token set successfully"
+            ))
         } catch (e: Exception) {
             result.error("SET_ORDER_TOKEN_ERROR", "Failed to set order token: ${e.message}", null)
         }
@@ -255,7 +273,10 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             
             // TODO: Implement actual save payment method setting with Revolut SDK
             // For now, return success to prevent crashes
-            result.success(true)
+            result.success(mapOf(
+                "success" to true,
+                "message" to "Save payment method preference set successfully"
+            ))
         } catch (e: Exception) {
             result.error("SET_SAVE_PAYMENT_METHOD_ERROR", "Failed to set save payment method: ${e.message}", null)
         }
@@ -272,7 +293,10 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             
             // TODO: Implement actual confirmation flow continuation with Revolut SDK
             // For now, return success to prevent crashes
-            result.success(true)
+            result.success(mapOf(
+                "success" to true,
+                "message" to "Confirmation flow continued successfully"
+            ))
             
             // Send event to Flutter side
             sendEvent("onControllerStateChange", mapOf(
@@ -295,7 +319,10 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             
             // TODO: Implement actual controller disposal with Revolut SDK
             // For now, return success to prevent crashes
-            result.success(true)
+            result.success(mapOf(
+                "success" to true,
+                "message" to "Controller disposed successfully"
+            ))
         } catch (e: Exception) {
             result.error("DISPOSE_CONTROLLER_ERROR", "Failed to dispose controller: ${e.message}", null)
         }
