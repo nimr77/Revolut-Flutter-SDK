@@ -231,9 +231,9 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
           _isButtonCreated = true;
 
           // Set order token if available
-          if (widget.orderToken != null) {
-            await _setOrderToken(widget.orderToken!);
-          }
+          // if (widget.orderToken != null) {
+          //   await _setOrderToken(widget.orderToken!);
+          // }
         } else {
           throw Exception('Failed to create button');
         }

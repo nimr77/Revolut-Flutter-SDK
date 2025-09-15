@@ -1,4 +1,4 @@
-group = "com.revolut.sdk.bridge"
+group = "com.example.revolut_sdk_bridge"
 version = "1.0-SNAPSHOT"
 
 buildscript {
@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.5.2")
+        classpath("com.android.tools.build:gradle:8.9.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
     }
 }
@@ -25,7 +25,7 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 android {
-    namespace = "com.revolut.sdk.bridge"
+    namespace = "com.example.revolut_sdk_bridge"
 
     compileSdk = 36
 
@@ -44,22 +44,10 @@ android {
     }
 
     defaultConfig {
-        minSdk = 21
+        minSdk = 24
     }
 
     dependencies {
-        // Revolut Pay SDK dependencies - correct version from documentation
-        implementation 'com.revolut:revolutpayments:1.0.0'
-        implementation 'com.revolut:revolutpay:2.8'
-        
-        // Android lifecycle dependencies for SDK integration
-        implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
-        implementation 'androidx.lifecycle:lifecycle-common-java8:2.7.0'
-        
-        // Android core dependencies
-        implementation 'androidx.core:core-ktx:1.12.0'
-        implementation 'androidx.appcompat:appcompat:1.6.1'
-        
         testImplementation("org.jetbrains.kotlin:kotlin-test")
         testImplementation("org.mockito:mockito-core:5.0.0")
     }
