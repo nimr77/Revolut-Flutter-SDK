@@ -1,11 +1,25 @@
 package com.example.revolut_sdk_bridge
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.EventChannel.EventSink
+import io.flutter.plugin.common.EventChannel.StreamHandler
+import com.revolut.payments.RevolutPaymentsSDK
+// import com.revolut.payments.RevolutPayEnvironment
+// import com.revolut.payments.RevolutPaymentsSDK
+import com.revolut.revolutpay.api.revolutPay
+import com.revolut.revolutpay.api.button.ButtonParams
+import com.revolut.revolutpay.api.button.Radius
+import com.revolut.revolutpay.api.button.Size
+import com.revolut.revolutpay.api.button.Variant
+import com.revolut.revolutpay.api.button.VariantModes
+import com.revolut.revolutpay.api.button.BoxText
+
+
 
 /** RevolutSdkBridgePlugin */
 class RevolutSdkBridgePlugin :
@@ -16,83 +30,78 @@ class RevolutSdkBridgePlugin :
     // This local reference serves to register the plugin with the Flutter Engine and unregister it
     // when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
-    private lateinit var handler: RevolutBridgeHandler
     private lateinit var eventChannel: EventChannel
-    private var eventSink: EventChannel.EventSink? = null
+    private var eventSink: EventSink? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "revolut_sdk_bridge")
-        channel.setMethodCallHandler(this)
-        handler = RevolutBridgeHandler()
-
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "revolut_sdk_bridge_events")
-        eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
-            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+        eventChannel.setStreamHandler(object : StreamHandler {
+            override fun onListen(arguments: Any?, events: EventSink?) {
                 eventSink = events
-                // Provide emitter to handler so it can send events
-                handler.setEventEmitter { payload ->
-                    try {
-                        eventSink?.success(payload)
-                    } catch (_: Throwable) {
-                        // Ignore emission failures
-                    }
-                }
-                // Notify Flutter that the event channel is ready
-                val readyEvent = mapOf(
-                    "method" to "onEventChannelReady",
-                    "data" to mapOf(
-                        "status" to "ready"
-                    )
-                )
-                eventSink?.success(readyEvent)
             }
-
             override fun onCancel(arguments: Any?) {
                 eventSink = null
-                handler.setEventEmitter(null)
             }
         })
-
-        // Register PlatformView for Revolut Pay button
-        try {
-            val registrar = flutterPluginBinding.platformViewRegistry
-            registrar.registerViewFactory(
-                "revolut_pay_button",
-                RevolutPayButtonFactory(flutterPluginBinding.binaryMessenger) { payload ->
-                    try {
-                        eventSink?.success(payload)
-                    } catch (_: Throwable) {}
-                },
-            )
-        } catch (_: Throwable) {
-            // Safe-guard: do not crash if registry API changes
-        }
+        channel.setMethodCallHandler(this)
     }
 
     override fun onMethodCall(
         call: MethodCall,
         result: Result
     ) {
-        val args = call.arguments as? Map<String, Any?>
         when (call.method) {
-            "getPlatformVersion" -> result.success(handler.getPlatformVersion())
-            "getSdkVersion" -> result.success(handler.getSdkVersion())
-            "init" -> result.success(handler.init(args))
-            "pay" -> result.success(handler.pay(args))
-            "provideButton" -> result.success(handler.provideButton(args))
-            "providePromotionalBannerWidget" -> result.success(handler.providePromotionalBannerWidget(args))
-            "createController" -> result.success(handler.createController())
-            "disposeController" -> result.success(handler.disposeController(args))
-            "continueConfirmationFlow" -> result.success(handler.continueConfirmationFlow(args))
-            "setOrderToken" -> result.success(handler.setOrderToken(args))
-            "setSavePaymentMethodForMerchant" -> result.success(handler.setSavePaymentMethodForMerchant(args))
-            else -> result.notImplemented()
+            "getPlatformVersion" -> {
+                result.success("Android ${android.os.Build.VERSION.RELEASE}")
+            }
+            "printHello" -> {
+                printHello(result)
+            }
+            "init" -> {
+                init(call, result)
+            }
+            else -> {
+                result.notImplemented()
+            }
         }
     }
+
+    private fun printHello(result: Result) {
+        println("Hello from Android")
+        sendEvent("printHello", mapOf("data" to "Hello from Android"))
+    }
+
+    private fun sendEvent(event: String, data: Map<String, Any?>) {
+        eventSink?.success(mapOf("method" to event, "data" to data))
+    }
+
+
+
+
+    private fun init(call: MethodCall, result: Result) {
+        try {
+            val merchantPublicKey = call.argument<String>("merchantPublicKey") ?: return result.error("INVALID_ARG", "merchantPublicKey required", null)
+            val envStr = call.argument<String>("environment") ?: "SANDBOX"
+            val env = if (envStr.uppercase() == "PRODUCTION") RevolutPaymentsSDK.Environment.PRODUCTION else RevolutPaymentsSDK.Environment.SANDBOX
+            
+            RevolutPaymentsSDK.configure(RevolutPaymentsSDK.Configuration(merchantPublicKey, env))
+            result.success(true)
+            sendEvent("initSuccess", mapOf("message" to "Revolut Payments SDK initialized"))
+        } catch (e: Exception) {
+            result.error("INIT_ERROR", e.message, null)
+            sendEvent("initError", mapOf("error" to e.message))
+        }
+    }
+
+    private fun createRevolutPayButton(call: MethodCall, result: Result) {
+        
+    }
+    
+   
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
-        eventSink = null
     }
 }

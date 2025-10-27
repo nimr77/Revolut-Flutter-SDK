@@ -31,6 +31,16 @@ class RevolutSdkBridgeMethodChannel {
       });
     }
   }
+  /// Prints hello from Android
+  Future<void> printHello() async {
+    try {
+      final result = await _channel.invokeMethod('printHello');
+      return result;
+    } catch (e) {
+      debugPrint('Failed to print hello: $e');
+      rethrow;
+    }
+  }
 
   /// Checks if the event channel is ready
   bool get isEventChannelReady => _eventSubscription != null;
@@ -170,10 +180,7 @@ class RevolutSdkBridgeMethodChannel {
   /// Initializes the Revolut Pay SDK
   Future<bool> init({
     required String environment,
-    required String returnUri,
     required String merchantPublicKey,
-    bool requestShipping = false,
-    Map<String, dynamic>? customer,
   }) async {
     try {
       // Ensure event channel is ready before proceeding
@@ -181,10 +188,7 @@ class RevolutSdkBridgeMethodChannel {
 
       final result = await _channel.invokeMethod('init', {
         'environment': environment,
-        'returnUri': returnUri,
         'merchantPublicKey': merchantPublicKey,
-        'requestShipping': requestShipping,
-        'customer': customer,
       });
 
       if (result is bool) {
@@ -362,6 +366,9 @@ class RevolutSdkBridgeMethodChannel {
       switch (methodName) {
         case 'onEventChannelReady':
           debugPrint('Event channel is ready: $data');
+          break;
+        case 'printHello':
+          debugPrint('Print hello: $data');
           break;
         case 'onOrderCompleted':
           _callbacks.handleOrderCompleted(data);

@@ -389,6 +389,22 @@ class RevolutSdkBridge {
   /// [controllerId] - ID of the controller to dispose
   ///
   /// Returns true if successful
+  /// 
+  /// 
+  /// 
+  Future<void> printHello() async {
+    try {
+      if (isAndroid) {
+        // Android implementation
+        return await android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks()).printHello();
+      } else {
+        throw UnsupportedError('Platform not supported');
+      }
+    } catch (e) {
+      debugPrint('Failed to print hello: $e');
+      rethrow;
+    }
+  }
   Future<bool> disposeController({required String controllerId}) async {
     try {
       if (isAndroid) {
@@ -492,9 +508,6 @@ class RevolutSdkBridge {
   Future<bool> initialize({
     required String merchantPublicKey,
     String? environment,
-    String? returnUri,
-    bool requestShipping = false,
-    CustomerData? customer,
   }) async {
     try {
       if (isAndroid) {
@@ -512,10 +525,7 @@ class RevolutSdkBridge {
 
         return await methodChannel.init(
           environment: androidEnv.value,
-          returnUri: returnUri ?? 'revolut://payment-return',
           merchantPublicKey: merchantPublicKey,
-          requestShipping: requestShipping,
-          customer: customer?.toMap(),
         );
       } else if (isIOS) {
         // iOS implementation

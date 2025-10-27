@@ -359,16 +359,7 @@ class _RevolutSdkExampleState extends State<RevolutSdkExample> {
     try {
       final success = await _sdkBridge.init(
         environment: _environment.value,
-        returnUri: _returnUri,
         merchantPublicKey: _merchantPublicKey,
-        requestShipping: false,
-        customer: CustomerData(
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          phone: '+44123456789',
-          country: 'GB',
-          dateOfBirth: DateOfBirthData(day: 15, month: 6, year: 1990),
-        ).toMap(),
       );
 
       if (success) {

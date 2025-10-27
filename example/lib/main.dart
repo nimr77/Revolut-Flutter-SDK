@@ -43,6 +43,24 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    //   return Scaffold(
+    //   appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: Text(widget.title)),
+
+    //   body: Column(
+    //     children: [
+    //       TextButton(
+    //         onPressed: () async {
+    //           await RevolutSdkBridge().initialize(
+    //             merchantPublicKey: RevolutConfig.testPublicKey,
+    //             environment: RevolutConfig.environment,
+    //           );
+    //         },
+    //         child: Text('Print Hello'),
+    //       ),
+    //     ],
+    //   ),
+    // );
+  
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
