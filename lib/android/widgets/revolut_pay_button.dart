@@ -124,8 +124,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     }
 
     // Update order token if changed
-    if (oldWidget.orderToken != widget.orderToken &&
-        widget.orderToken != null) {
+    if (oldWidget.orderToken != widget.orderToken && widget.orderToken != null) {
       _setOrderToken(widget.orderToken!);
     }
   }
@@ -144,9 +143,12 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
 
   /// Builds the actual button widget
   Widget _buildButton() {
+    final double resolvedHeight = widget.height ?? 48.0;
+    final double? resolvedWidth = widget.width;
+
     return Container(
-      width: widget.width,
-      height: widget.height,
+      width: resolvedWidth ?? double.infinity,
+      height: resolvedHeight,
       margin: widget.margin,
       padding: widget.padding,
       decoration: widget.decoration,
@@ -155,10 +157,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
         child: AndroidView(
           viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
-          creationParams: {
-            'buttonParams': widget.buttonParams?.toMap(),
-            'orderToken': widget.orderToken,
-          },
+          creationParams: {'buttonParams': widget.buttonParams?.toMap(), 'orderToken': widget.orderToken},
           creationParamsCodec: const StandardMessageCodec(),
         ),
       ),
@@ -194,18 +193,9 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
       width: widget.width,
       height: widget.height ?? 48.0,
       margin: widget.margin,
-      decoration:
-          widget.decoration ??
-          BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(8.0),
-          ),
+      decoration: widget.decoration ?? BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(8.0)),
       child: const Center(
-        child: SizedBox(
-          width: 20.0,
-          height: 20.0,
-          child: CircularProgressIndicator(strokeWidth: 2.0),
-        ),
+        child: SizedBox(width: 20.0, height: 20.0, child: CircularProgressIndicator(strokeWidth: 2.0)),
       ),
     );
   }
@@ -220,9 +210,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     });
 
     try {
-      final result = await _channel.invokeMethod('provideButton', {
-        'buttonParams': widget.buttonParams?.toMap(),
-      });
+      final result = await _channel.invokeMethod('provideButton', {'buttonParams': widget.buttonParams?.toMap()});
 
       if (result is Map) {
         final buttonCreated = result['success'] as bool? ?? false;
@@ -279,10 +267,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     if (_buttonId == null) return;
 
     try {
-      await _channel.invokeMethod('setOrderToken', {
-        'buttonId': _buttonId,
-        'orderToken': orderToken,
-      });
+      await _channel.invokeMethod('setOrderToken', {'buttonId': _buttonId, 'orderToken': orderToken});
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -367,16 +352,9 @@ class _RevolutPayPromoBannerState extends State<RevolutPayPromoBanner> {
     return Container(
       width: widget.width,
       height: widget.height ?? 80.0,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8.0),
-      ),
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8.0)),
       child: const Center(
-        child: SizedBox(
-          width: 20.0,
-          height: 20.0,
-          child: CircularProgressIndicator(strokeWidth: 2.0),
-        ),
+        child: SizedBox(width: 20.0, height: 20.0, child: CircularProgressIndicator(strokeWidth: 2.0)),
       ),
     );
   }
@@ -391,10 +369,10 @@ class _RevolutPayPromoBannerState extends State<RevolutPayPromoBanner> {
     });
 
     try {
-      final result = await _channel.invokeMethod(
-        'providePromotionalBannerWidget',
-        {'promoParams': widget.promoParams?.toMap(), 'themeId': widget.themeId},
-      );
+      final result = await _channel.invokeMethod('providePromotionalBannerWidget', {
+        'promoParams': widget.promoParams?.toMap(),
+        'themeId': widget.themeId,
+      });
 
       if (result is Map<String, dynamic>) {
         final bannerCreated = result['bannerCreated'] as bool? ?? false;
