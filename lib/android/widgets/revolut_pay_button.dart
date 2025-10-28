@@ -12,6 +12,33 @@ class RevolutPayButton extends StatefulWidget {
   /// Order token for payment processing
   final String? orderToken;
 
+  /// Payment amount in minor units (e.g., 1000 for £10.00)
+  final int? amount;
+
+  /// Payment currency (e.g., 'GBP', 'EUR', 'USD')
+  final String? currency;
+
+  /// Customer email address
+  final String? email;
+
+  /// Whether to request shipping information
+  final bool shouldRequestShipping;
+
+  /// Whether to save payment method for merchant
+  final bool savePaymentMethodForMerchant;
+
+  /// Return URL for payment completion
+  final String? returnURL;
+
+  /// Merchant name to display
+  final String? merchantName;
+
+  /// Merchant logo URL
+  final String? merchantLogoURL;
+
+  /// Additional data for the payment
+  final Map<String, dynamic>? additionalData;
+
   /// Callback when button is clicked
   final VoidCallback? onPressed;
 
@@ -40,6 +67,15 @@ class RevolutPayButton extends StatefulWidget {
     super.key,
     this.buttonParams,
     this.orderToken,
+    this.amount,
+    this.currency,
+    this.email,
+    this.shouldRequestShipping = false,
+    this.savePaymentMethodForMerchant = false,
+    this.returnURL,
+    this.merchantName,
+    this.merchantLogoURL,
+    this.additionalData,
     this.onPressed,
     this.onError,
     this.width,
@@ -157,7 +193,11 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
         child: AndroidView(
           viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
-          creationParams: {'buttonParams': widget.buttonParams?.toMap(), 'orderToken': widget.orderToken},
+          creationParams: {
+            'buttonParams': widget.buttonParams?.toMap(),
+            'orderToken': widget.orderToken,
+            'buttonId': _buttonId,
+          },
           creationParamsCodec: const StandardMessageCodec(),
         ),
       ),
@@ -210,12 +250,28 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     });
 
     try {
-      final result = await _channel.invokeMethod('provideButton', {'buttonParams': widget.buttonParams?.toMap()});
+      final result = await _channel.invokeMethod('provideButton', {
+        'buttonParams': widget.buttonParams?.toMap(),
+        'orderToken': widget.orderToken,
+        'amount': widget.amount,
+        'currency': widget.currency,
+        'email': widget.email,
+        'shouldRequestShipping': widget.shouldRequestShipping,
+        'savePaymentMethodForMerchant': widget.savePaymentMethodForMerchant,
+        'returnURL': widget.returnURL,
+        'merchantName': widget.merchantName,
+        'merchantLogoURL': widget.merchantLogoURL,
+        'additionalData': widget.additionalData,
+      });
 
+      print('DEBUG: Raw result from provideButton: $result (Type: ${result.runtimeType})');
       if (result is Map) {
+        print('DEBUG: Result keys: ${result.keys}');
+        print('DEBUG: buttonId value: ${result['buttonId']} (Type: ${result['buttonId'].runtimeType})');
+
         final buttonCreated = result['success'] as bool? ?? false;
         if (buttonCreated) {
-          _buttonId = result['buttonId'] as String?;
+          _buttonId = result['buttonId']?.toString();
           _isButtonCreated = true;
 
           // Set order token if available

@@ -61,6 +61,10 @@ android {
 }
 
 dependencies {
+    // Flutter dependencies
+    compileOnly("io.flutter:flutter_embedding_debug:1.0.0-4c4c560bfc11f8c14890e5f10e6a9fde8d4c8d8d")
+    
+    // Android dependencies
     implementation("androidx.activity:activity-ktx:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
     implementation("com.revolut.payments:revolutpaylite:3.0.0")

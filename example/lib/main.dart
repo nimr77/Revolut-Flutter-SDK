@@ -16,10 +16,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Revolut Pay SDK Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple), useMaterial3: true),
       home: const MyHomePage(title: 'Revolut Pay SDK Demo'),
     );
   }
@@ -36,7 +33,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _currencyController = TextEditingController();
+  final TextEditingController _currencyController = TextEditingController(text: 'GBP');
   final List<Map<String, dynamic>> _logs = [];
   final List<Map<String, dynamic>> _paymentResults = [];
   bool _isInitialized = false;
@@ -60,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
     //     ],
     //   ),
     // );
-  
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -69,24 +66,14 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: const Icon(Icons.device_hub),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CrossPlatformTest(),
-                ),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const CrossPlatformTest()));
             },
             tooltip: 'Cross-Platform Test',
           ),
           IconButton(
             icon: const Icon(Icons.bug_report),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PluginTest(),
-                ),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const PluginTest()));
             },
             tooltip: 'Plugin Test',
           ),
@@ -104,27 +91,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'SDK Status',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+                      Text('SDK Status', style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 8),
-                      Text(
-                        _isInitialized
-                            ? 'SDK Initialized'
-                            : 'SDK Not Initialized',
-                      ),
+                      Text(_isInitialized ? 'SDK Initialized' : 'SDK Not Initialized'),
                       const SizedBox(height: 16),
                       if (!_isInitialized)
-                        ElevatedButton(
-                          onPressed: _initializeSDK,
-                          child: const Text('Initialize SDK'),
-                        ),
+                        ElevatedButton(onPressed: _initializeSDK, child: const Text('Initialize SDK')),
                       if (_isInitialized)
-                        ElevatedButton(
-                          onPressed: _testEventChannel,
-                          child: const Text('Test Event Channel'),
-                        ),
+                        ElevatedButton(onPressed: _testEventChannel, child: const Text('Test Event Channel')),
                     ],
                   ),
                 ),
@@ -137,10 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Payment Details',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
+                        Text('Payment Details', style: Theme.of(context).textTheme.headlineSmall),
                         const SizedBox(height: 16),
                         TextField(
                           controller: _amountController,
@@ -153,10 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _currencyController,
-                          decoration: const InputDecoration(
-                            labelText: 'Currency',
-                            hintText: 'e.g., GBP, EUR, USD',
-                          ),
+                          decoration: const InputDecoration(labelText: 'Currency', hintText: 'e.g., GBP, EUR, USD'),
                         ),
                         const SizedBox(height: 16),
                         // Revolut Pay Button with full customization
@@ -166,28 +134,19 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Revolut Pay Button',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
+                                Text('Revolut Pay Button', style: Theme.of(context).textTheme.titleLarge),
                                 const SizedBox(height: 16),
                                 CrossPlatformRevolutPayButton(
                                   orderToken: 'test_order_token_123',
-                                  amount:
-                                      int.tryParse(_amountController.text) ??
-                                      1000,
-                                  currency: _currencyController.text,
+                                  amount: int.tryParse(_amountController.text) ?? 1000,
+                                  currency: _currencyController.text.isNotEmpty ? _currencyController.text : 'GBP',
                                   email: 'customer@example.com',
                                   shouldRequestShipping: false,
                                   savePaymentMethodForMerchant: false,
                                   returnURL: 'revolut-sdk-bridge://revolut-pay',
                                   merchantName: 'Test Merchant',
-                                  merchantLogoURL:
-                                      'https://example.com/logo.png',
-                                  additionalData: {
-                                    'test_mode': true,
-                                    'source': 'flutter_example',
-                                  },
+                                  merchantLogoURL: 'https://example.com/logo.png',
+                                  additionalData: {'test_mode': true, 'source': 'flutter_example'},
                                   height: 70,
                                   onPaymentResult: (result) {
                                     setState(() {
@@ -195,22 +154,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                     });
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(
-                                          'Payment Result: ${result['success'] ? "Success" : "Failed"}',
-                                        ),
-                                        backgroundColor:
-                                            result['success'] == true
-                                            ? Colors.green
-                                            : Colors.red,
+                                        content: Text('Payment Result: ${result['success'] ? "Success" : "Failed"}'),
+                                        backgroundColor: result['success'] == true ? Colors.green : Colors.red,
                                       ),
                                     );
                                   },
                                   onPaymentError: (error) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Payment Error: $error'),
-                                        backgroundColor: Colors.red,
-                                      ),
+                                      SnackBar(content: Text('Payment Error: $error'), backgroundColor: Colors.red),
                                     );
                                   },
                                   onPaymentCancelled: () {
@@ -224,9 +175,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   onButtonCreated: () {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text(
-                                          'Revolut Pay button created successfully!',
-                                        ),
+                                        content: Text('Revolut Pay button created successfully!'),
                                         backgroundColor: Colors.green,
                                       ),
                                     );
@@ -234,9 +183,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   onButtonError: () {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text(
-                                          'Failed to create Revolut Pay button',
-                                        ),
+                                        content: Text('Failed to create Revolut Pay button'),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
@@ -244,10 +191,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   onError: (error) {
                                     // Developer handles errors themselves
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error: $error'),
-                                        backgroundColor: Colors.red,
-                                      ),
+                                      SnackBar(content: Text('Error: $error'), backgroundColor: Colors.red),
                                     );
                                   },
                                 ),
@@ -261,15 +205,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                   child: Padding(
                                     padding: const EdgeInsets.all(16.0),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          'Button Status',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.titleMedium,
-                                        ),
+                                        Text('Button Status', style: Theme.of(context).textTheme.titleMedium),
                                         const SizedBox(height: 8),
                                         Text('Is Initialized: $_isInitialized'),
                                         // Removed _buttonController status display
@@ -293,21 +231,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Configuration Info',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+                      Text('Configuration Info', style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 8),
                       Text('Environment: ${RevolutConfig.environment}'),
                       Text('Base URL: ${RevolutConfig.currentBaseUrl}'),
-                      Text(
-                        'Public Key: ${RevolutConfig.currentPublicKey.substring(0, 20)}...',
-                      ),
+                      Text('Public Key: ${RevolutConfig.currentPublicKey.substring(0, 20)}...'),
                       const SizedBox(height: 16),
-                      Text(
-                        'Instructions',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                      Text('Instructions', style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       const Text(
                         '1. The SDK is configured with test credentials\n'
@@ -330,10 +260,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'SDK Logs (${_logs.length})',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
+                          Text('SDK Logs (${_logs.length})', style: Theme.of(context).textTheme.headlineSmall),
                           if (_logs.isNotEmpty)
                             TextButton(
                               onPressed: () {
@@ -379,17 +306,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               }
 
                               return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 child: Text(
                                   log.toString(),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: logColor,
-                                    fontFamily: 'monospace',
-                                  ),
+                                  style: TextStyle(fontSize: 12, color: logColor, fontFamily: 'monospace'),
                                 ),
                               );
                             },
@@ -439,22 +359,14 @@ class _MyHomePageState extends State<MyHomePage> {
                             itemCount: _paymentResults.length,
                             reverse: true,
                             itemBuilder: (context, index) {
-                              final result =
-                                  _paymentResults[_paymentResults.length -
-                                      1 -
-                                      index];
+                              final result = _paymentResults[_paymentResults.length - 1 - index];
                               return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 child: Text(
                                   '${result['timestamp'] ?? ''} ${result['success'] == true ? 'SUCCESS' : 'ERROR'}: ${result['message'] ?? result['error'] ?? ''}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: (result['success'] as bool?) == true
-                                        ? Colors.green
-                                        : Colors.red,
+                                    color: (result['success'] as bool?) == true ? Colors.green : Colors.red,
                                     fontFamily: 'monospace',
                                   ),
                                 ),
@@ -497,8 +409,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       final bool result = await RevolutSdkBridge().initialize(
         merchantPublicKey: merchantPublicKey,
-        environment: RevolutConfig
-            .environment, // Use 'sandbox' for testing, 'production' for live payments
+        environment: RevolutConfig.environment, // Use 'sandbox' for testing, 'production' for live payments
       );
 
       if (result) {
@@ -521,13 +432,13 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       // Test event channel setup
       final eventChannelReady = await RevolutSdkBridge().setupEventChannel();
-      
+
       // Test waiting for event channel
       final waitResult = await RevolutSdkBridge().waitForEventChannel();
-      
+
       // Get plugin status
       final status = await RevolutSdkBridge().getPluginStatus();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -541,12 +452,9 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Event Channel Test Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Event Channel Test Error: $e'), backgroundColor: Colors.red));
     }
   }
 }

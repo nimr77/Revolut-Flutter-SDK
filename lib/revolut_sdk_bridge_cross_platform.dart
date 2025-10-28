@@ -76,6 +76,15 @@ class CrossPlatformRevolutPayButton extends StatelessWidget {
       return android.RevolutPayButton(
         buttonParams: buttonParams,
         orderToken: orderToken,
+        amount: amount,
+        currency: currency,
+        email: email,
+        shouldRequestShipping: shouldRequestShipping,
+        savePaymentMethodForMerchant: savePaymentMethodForMerchant,
+        returnURL: returnURL,
+        merchantName: merchantName,
+        merchantLogoURL: merchantLogoURL,
+        additionalData: additionalData,
         onPressed: onPressed,
         onError: onError,
         width: width,
@@ -389,9 +398,9 @@ class RevolutSdkBridge {
   /// [controllerId] - ID of the controller to dispose
   ///
   /// Returns true if successful
-  /// 
-  /// 
-  /// 
+  ///
+  ///
+  ///
   Future<void> printHello() async {
     try {
       if (isAndroid) {
@@ -405,6 +414,7 @@ class RevolutSdkBridge {
       rethrow;
     }
   }
+
   Future<bool> disposeController({required String controllerId}) async {
     try {
       if (isAndroid) {
@@ -505,10 +515,7 @@ class RevolutSdkBridge {
   /// [returnUri] - Return URI for payment completion (Android only)
   /// [requestShipping] - Whether to request shipping information (Android only)
   /// [customer] - Customer data (Android only)
-  Future<bool> initialize({
-    required String merchantPublicKey,
-    String? environment,
-  }) async {
+  Future<bool> initialize({required String merchantPublicKey, String? environment}) async {
     try {
       if (isAndroid) {
         // Android implementation
@@ -523,10 +530,7 @@ class RevolutSdkBridge {
         // Create the method channel and proceed with initialization
         final methodChannel = android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks());
 
-        return await methodChannel.init(
-          environment: androidEnv.value,
-          merchantPublicKey: merchantPublicKey,
-        );
+        return await methodChannel.init(environment: androidEnv.value, merchantPublicKey: merchantPublicKey);
       } else if (isIOS) {
         // iOS implementation
         return await ios.RevolutSdkBridgeIos.initializeIos(
