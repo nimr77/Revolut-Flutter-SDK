@@ -40,6 +40,9 @@ class RevolutPayButton extends StatefulWidget {
   final Map<String, dynamic>? additionalData;
 
   /// Callback when button is clicked
+  /// Note: The native button handles clicks directly and triggers the payment flow.
+  /// To listen for button clicks and payment events, use the RevolutCallbacks system
+  /// via RevolutSdkBridge to set up event listeners for onButtonClick, onOrderCompleted, etc.
   final VoidCallback? onPressed;
 
   /// Callback when button creation fails
@@ -154,14 +157,14 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
   void didUpdateWidget(RevolutPayButton oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Recreate button if parameters changed
-    if (oldWidget.buttonParams != widget.buttonParams) {
-      _createButton();
-    }
-
-    // Update order token if changed
-    if (oldWidget.orderToken != widget.orderToken && widget.orderToken != null) {
-      _setOrderToken(widget.orderToken!);
+    // If critical parameters changed, rebuild the widget
+    // The AndroidView will be recreated automatically
+    if (oldWidget.orderToken != widget.orderToken ||
+        oldWidget.amount != widget.amount ||
+        oldWidget.currency != widget.currency ||
+        oldWidget.email != widget.email) {
+      // Widget will rebuild and create new platform view
+      setState(() {});
     }
   }
 
@@ -174,29 +177,38 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
   @override
   void initState() {
     super.initState();
-    _createButton();
+    _isButtonCreated = true;
+    _isLoading = false;
   }
 
   /// Builds the actual button widget
   Widget _buildButton() {
-    final double resolvedHeight = widget.height ?? 48.0;
-    final double? resolvedWidth = widget.width;
+    final buttonParamsMap = (widget.buttonParams ?? const ButtonParamsData()).toMap();
 
     return Container(
-      width: resolvedWidth ?? double.infinity,
-      height: resolvedHeight,
+      width: widget.width ?? double.infinity,
       margin: widget.margin,
       padding: widget.padding,
       decoration: widget.decoration,
-      child: GestureDetector(
-        onTap: widget.enabled ? _handleButtonPress : null,
+      child: SizedBox(
+        height: widget.height,
         child: AndroidView(
+          key: ValueKey('revolut_button_${widget.orderToken}_${widget.amount}_${widget.currency}'),
           viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
           creationParams: {
-            'buttonParams': widget.buttonParams?.toMap(),
+            'buttonParams': buttonParamsMap,
             'orderToken': widget.orderToken,
             'buttonId': _buttonId,
+            'amount': widget.amount,
+            'currency': widget.currency,
+            'email': widget.email,
+            'shouldRequestShipping': widget.shouldRequestShipping,
+            'savePaymentMethodForMerchant': widget.savePaymentMethodForMerchant,
+            'returnURL': widget.returnURL ?? 'myapp://payment-return',
+            'merchantName': widget.merchantName,
+            'merchantLogoURL': widget.merchantLogoURL,
+            'additionalData': widget.additionalData,
           },
           creationParamsCodec: const StandardMessageCodec(),
         ),
@@ -240,97 +252,15 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     );
   }
 
-  /// Creates the Revolut Pay button through the native platform
-  Future<void> _createButton() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await _channel.invokeMethod('provideButton', {
-        'buttonParams': widget.buttonParams?.toMap(),
-        'orderToken': widget.orderToken,
-        'amount': widget.amount,
-        'currency': widget.currency,
-        'email': widget.email,
-        'shouldRequestShipping': widget.shouldRequestShipping,
-        'savePaymentMethodForMerchant': widget.savePaymentMethodForMerchant,
-        'returnURL': widget.returnURL,
-        'merchantName': widget.merchantName,
-        'merchantLogoURL': widget.merchantLogoURL,
-        'additionalData': widget.additionalData,
-      });
-
-      print('DEBUG: Raw result from provideButton: $result (Type: ${result.runtimeType})');
-      if (result is Map) {
-        print('DEBUG: Result keys: ${result.keys}');
-        print('DEBUG: buttonId value: ${result['buttonId']} (Type: ${result['buttonId'].runtimeType})');
-
-        final buttonCreated = result['success'] as bool? ?? false;
-        if (buttonCreated) {
-          _buttonId = result['buttonId']?.toString();
-          _isButtonCreated = true;
-
-          // Set order token if available
-          // if (widget.orderToken != null) {
-          //   await _setOrderToken(widget.orderToken!);
-          // }
-        } else {
-          throw Exception('Failed to create button');
-        }
-      } else {
-        throw Exception('Invalid response from native side');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isButtonCreated = false;
-        });
-        widget.onError?.call(e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  /// Handles button press events
-  void _handleButtonPress() {
-    if (!_isButtonCreated || !widget.enabled) return;
-
-    widget.onPressed?.call();
-  }
-
   /// Callback when the platform view is created
   void _onPlatformViewCreated(int id) {
-    // Platform view is ready
+    // Platform view is ready, button has been created natively
     if (mounted) {
       setState(() {
+        _isButtonCreated = true;
         _isLoading = false;
+        _errorMessage = null;
       });
-    }
-  }
-
-  /// Sets the order token for the button
-  Future<void> _setOrderToken(String orderToken) async {
-    if (_buttonId == null) return;
-
-    try {
-      await _channel.invokeMethod('setOrderToken', {'buttonId': _buttonId, 'orderToken': orderToken});
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Failed to set order token: ${e.toString()}';
-        });
-        widget.onError?.call(_errorMessage!);
-      }
     }
   }
 }
@@ -338,6 +268,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
 class _RevolutPayPromoBannerState extends State<RevolutPayPromoBanner> {
   static const MethodChannel _channel = MethodChannel('revolut_sdk_bridge');
 
+  // ignore: unused_field
   String? _bannerId;
   bool _isBannerCreated = false;
   bool _isLoading = true;

@@ -31,16 +31,6 @@ class RevolutSdkBridgeMethodChannel {
       });
     }
   }
-  /// Prints hello from Android
-  Future<void> printHello() async {
-    try {
-      final result = await _channel.invokeMethod('printHello');
-      return result;
-    } catch (e) {
-      debugPrint('Failed to print hello: $e');
-      rethrow;
-    }
-  }
 
   /// Checks if the event channel is ready
   bool get isEventChannelReady => _eventSubscription != null;
@@ -178,10 +168,7 @@ class RevolutSdkBridgeMethodChannel {
   }
 
   /// Initializes the Revolut Pay SDK
-  Future<bool> init({
-    required String environment,
-    required String merchantPublicKey,
-  }) async {
+  Future<bool> init({required String environment, required String merchantPublicKey}) async {
     try {
       // Ensure event channel is ready before proceeding
       ensureEventChannelReady();
@@ -363,29 +350,40 @@ class RevolutSdkBridgeMethodChannel {
         return;
       }
 
+      // LIVE LOG: Show all events in Flutter console
+      print(
+        '🔔 FLUTTER EVENT: $methodName - ${data.toString().substring(0, data.toString().length > 100 ? 100 : data.toString().length)}',
+      );
+
       switch (methodName) {
         case 'onEventChannelReady':
-          debugPrint('Event channel is ready: $data');
+          print('✅ Event channel is ready: $data');
           break;
         case 'printHello':
-          debugPrint('Print hello: $data');
+          print('👋 Print hello: $data');
           break;
         case 'onOrderCompleted':
+          print('🎉 ORDER COMPLETED: $data');
           _callbacks.handleOrderCompleted(data);
           break;
         case 'onOrderFailed':
+          print('❌ ORDER FAILED: $data');
           _callbacks.handleOrderFailed(data);
           break;
         case 'onUserPaymentAbandoned':
+          print('⚠️ USER ABANDONED PAYMENT: $data');
           _callbacks.handleUserPaymentAbandoned(data);
           break;
         case 'onPaymentStatusUpdate':
+          print('📊 PAYMENT STATUS UPDATE: $data');
           _callbacks.handlePaymentStatusUpdate(data);
           break;
         case 'onButtonClick':
+          print('🔵 BUTTON CLICKED: $data');
           _callbacks.handleButtonClick(data);
           break;
         case 'onControllerStateChange':
+          print('🔄 CONTROLLER STATE CHANGE: $data');
           _callbacks.handleControllerStateChange(data);
           break;
         case 'onBannerInteraction':
@@ -395,6 +393,7 @@ class RevolutSdkBridgeMethodChannel {
           _callbacks.handleLifecycleEvent(data);
           break;
         case 'onDeepLinkReceived':
+          print('🔗 DEEP LINK RECEIVED: $data');
           _callbacks.handleDeepLinkEvent(data);
           break;
         case 'onNetworkStatusUpdate':
@@ -416,16 +415,16 @@ class RevolutSdkBridgeMethodChannel {
           _callbacks.handleSessionEvent(data);
           break;
         default:
-          debugPrint('Unknown event method: $methodName');
+          print('❓ Unknown event method: $methodName');
       }
     } catch (e) {
-      debugPrint('Error handling native event: $e');
+      print('❌ Error handling native event: $e');
       // Don't crash on event handling errors
     }
   }
 
   /// Retries setting up the event channel
-  void _retryEventChannelSetup() {
+  void _retryEventChannelSetup() {  
     if (_eventSubscription != null) {
       _eventSubscription?.cancel();
       _eventSubscription = null;

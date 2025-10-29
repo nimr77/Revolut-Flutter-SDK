@@ -401,19 +401,7 @@ class RevolutSdkBridge {
   ///
   ///
   ///
-  Future<void> printHello() async {
-    try {
-      if (isAndroid) {
-        // Android implementation
-        return await android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks()).printHello();
-      } else {
-        throw UnsupportedError('Platform not supported');
-      }
-    } catch (e) {
-      debugPrint('Failed to print hello: $e');
-      rethrow;
-    }
-  }
+  
 
   Future<bool> disposeController({required String controllerId}) async {
     try {
