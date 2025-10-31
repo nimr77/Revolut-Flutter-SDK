@@ -86,6 +86,9 @@ class CrossPlatformRevolutPayButton extends StatelessWidget {
         merchantLogoURL: merchantLogoURL,
         additionalData: additionalData,
         onPressed: onPressed,
+        onPaymentSuccess: onPaymentResult,
+        onPaymentError: (error, details) => onPaymentError?.call(error),
+        onPaymentCancelled: onPaymentCancelled,
         onError: onError,
         width: width,
         height: height,
@@ -401,7 +404,6 @@ class RevolutSdkBridge {
   ///
   ///
   ///
-  
 
   Future<bool> disposeController({required String controllerId}) async {
     try {

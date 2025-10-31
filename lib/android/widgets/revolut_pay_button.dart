@@ -45,6 +45,15 @@ class RevolutPayButton extends StatefulWidget {
   /// via RevolutSdkBridge to set up event listeners for onButtonClick, onOrderCompleted, etc.
   final VoidCallback? onPressed;
 
+  /// Callback when payment succeeds
+  final Function(Map<String, dynamic> result)? onPaymentSuccess;
+
+  /// Callback when payment fails
+  final Function(String error, Map<String, dynamic>? details)? onPaymentError;
+
+  /// Callback when payment is cancelled by user
+  final Function()? onPaymentCancelled;
+
   /// Callback when button creation fails
   final Function(String error)? onError;
 
@@ -80,6 +89,9 @@ class RevolutPayButton extends StatefulWidget {
     this.merchantLogoURL,
     this.additionalData,
     this.onPressed,
+    this.onPaymentSuccess,
+    this.onPaymentError,
+    this.onPaymentCancelled,
     this.onError,
     this.width,
     this.height,
@@ -128,13 +140,13 @@ class RevolutPayPromoBanner extends StatefulWidget {
 }
 
 class _RevolutPayButtonState extends State<RevolutPayButton> {
-  static const MethodChannel _channel = MethodChannel('revolut_sdk_bridge');
   static const String _viewType = 'revolut_pay_button';
 
   String? _buttonId;
   bool _isButtonCreated = false;
   bool _isLoading = true;
   String? _errorMessage;
+  MethodChannel? _paymentChannel;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +182,7 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
 
   @override
   void dispose() {
-    // Clean up any resources if needed
+    _paymentChannel?.setMethodCallHandler(null);
     super.dispose();
   }
 
@@ -254,6 +266,10 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
 
   /// Callback when the platform view is created
   void _onPlatformViewCreated(int id) {
+    // Set up payment channel for this specific button instance
+    _paymentChannel = MethodChannel('revolut_pay_button_payment_$id');
+    _paymentChannel!.setMethodCallHandler(_handlePaymentChannelCall);
+
     // Platform view is ready, button has been created natively
     if (mounted) {
       setState(() {
@@ -261,6 +277,39 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
         _isLoading = false;
         _errorMessage = null;
       });
+    }
+  }
+
+  /// Handles payment result messages from the native side
+  Future<void> _handlePaymentChannelCall(MethodCall call) async {
+    if (!mounted) return;
+
+    switch (call.method) {
+      case 'onPaymentResult':
+        final args = call.arguments as Map<dynamic, dynamic>?;
+        if (args == null) return;
+
+        final success = args['success'] as bool? ?? false;
+        final message = args['message'] as String? ?? '';
+        final error = args['error'] as String? ?? '';
+        final resultData = Map<String, dynamic>.from(args);
+
+        if (success) {
+          widget.onPaymentSuccess?.call(resultData);
+        } else {
+          // Check if it was cancelled by user
+          if (error == 'user_abandoned_payment' ||
+              message.toLowerCase().contains('abandoned') ||
+              message.toLowerCase().contains('cancelled')) {
+            widget.onPaymentCancelled?.call();
+          } else {
+            widget.onPaymentError?.call(error.isNotEmpty ? error : message, resultData);
+          }
+        }
+        break;
+
+      default:
+        break;
     }
   }
 }
