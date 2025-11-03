@@ -779,6 +779,7 @@ class RevolutPayButtonView(
     private var paymentController: RevolutPaymentController? = null
     private var componentActivity: ComponentActivity? = null
     private var revolutPayButton: com.revolut.revolutpay.api.RevolutPayButton? = null
+    private var isPaymentInProgress: Boolean = false
 
     init {
         android.util.Log.i(TAG, "═══════════════════════════════════════")
@@ -856,6 +857,17 @@ class RevolutPayButtonView(
 
     private fun handleButtonClick() {
         android.util.Log.i(TAG, "🟢 >>> handleButtonClick: START - orderToken=$orderToken")
+        
+        // Prevent multiple simultaneous payment attempts
+        if (isPaymentInProgress) {
+            android.util.Log.w(TAG, "⚠️ >>> handleButtonClick: Payment already in progress, ignoring click")
+            plugin.logToDartPublic("WARNING", "Payment already in progress, ignoring duplicate click")
+            return
+        }
+        
+        isPaymentInProgress = true
+        android.util.Log.d(TAG, ">>> handleButtonClick: Payment in progress flag set to TRUE")
+        
         plugin.logToDartPublic("INFO", "Processing button click, order token: $orderToken")
         
         android.util.Log.d(TAG, ">>> handleButtonClick: Sending onButtonClick event...")
@@ -957,6 +969,15 @@ class RevolutPayButtonView(
             "orderToken" to (orderToken ?: "")
         )
 
+        // CRITICAL: Reset payment in progress flag to allow future payments
+        isPaymentInProgress = false
+        android.util.Log.d(TAG, ">>> sendPaymentResult: Payment in progress flag reset to FALSE")
+
+        // CRITICAL: Always hide the loading indicator when sending results
+        // This prevents infinite loading states on errors
+        revolutPayButton?.showBlockingLoading(false)
+        android.util.Log.d(TAG, ">>> sendPaymentResult: Hiding blocking loading indicator")
+
         paymentChannel.invokeMethod("onPaymentResult", resultData)
 
         if (success) {
@@ -988,6 +1009,12 @@ class RevolutPayButtonView(
 
     private fun initializeController() {
         android.util.Log.i(TAG, "🎯 >>> initializeController: START")
+        
+        // Prevent duplicate controller initialization
+        if (paymentController != null) {
+            android.util.Log.w(TAG, "⚠️ >>> initializeController: Controller already exists, skipping re-initialization")
+            return
+        }
         
         val activity = plugin.getActivity()
         android.util.Log.d(TAG, ">>> initializeController: Got activity: ${activity?.javaClass?.simpleName}")
@@ -1073,8 +1100,7 @@ class RevolutPayButtonView(
             }
         }
 
-        android.util.Log.d(TAG, ">>> handlePaymentResult: Hiding blocking loading...")
-        revolutPayButton?.showBlockingLoading(false)
+        // Note: Loading indicator is now hidden in sendPaymentResult()
         android.util.Log.i(TAG, "💰 >>> handlePaymentResult: END")
     }
 
