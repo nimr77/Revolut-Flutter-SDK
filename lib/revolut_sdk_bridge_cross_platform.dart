@@ -509,7 +509,7 @@ class RevolutSdkBridge {
     try {
       if (isAndroid) {
         // Android implementation
-        final androidEnv = environment == 'main' ? RevolutEnvironment.main : RevolutEnvironment.sandbox;
+        final androidEnv = _resolveAndroidEnvironment(environment);
 
         // Wait for event channel to be ready
         final eventChannelReady = await waitForEventChannel();
@@ -692,5 +692,26 @@ class RevolutSdkBridge {
       }
     }
     return true; // iOS doesn't need event channel
+  }
+
+  RevolutEnvironment _resolveAndroidEnvironment(String? environment) {
+    final normalized = environment?.trim().toLowerCase();
+    switch (normalized) {
+      case 'production':
+      case 'prod':
+      case 'live':
+      case 'main':
+        return RevolutEnvironment.main;
+      case 'sandbox':
+      case 'test':
+      case 'testing':
+      case 'dev':
+      case 'development':
+      case null:
+        return RevolutEnvironment.sandbox;
+      default:
+        debugPrint('Unknown environment "$environment", defaulting to sandbox.');
+        return RevolutEnvironment.sandbox;
+    }
   }
 }

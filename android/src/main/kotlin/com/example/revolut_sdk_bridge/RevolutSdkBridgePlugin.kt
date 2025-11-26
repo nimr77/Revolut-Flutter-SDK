@@ -41,6 +41,7 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         private const val EVENT_CHANNEL_NAME = "revolut_sdk_bridge_events"
         private const val LOG_CHANNEL_NAME = "revolut_sdk_bridge_logs"
         private const val VIEW_TYPE_BUTTON = "revolut_pay_button"
+        private const val TAG = "RevolutSdkBridgePlugin"
     }
 
     private lateinit var channel : MethodChannel
@@ -57,6 +58,9 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     private val controllerStates = mutableMapOf<String, MutableMap<String, Any>>()
     private var nextViewId = 1
     private var isInitialized = false
+    private var currentEnvironment: RevolutPaymentsSDK.Environment? = null
+    private var currentEnvironmentLabel: String? = null
+    private var currentMerchantPublicKey: String? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         this.flutterPluginBinding = flutterPluginBinding
@@ -133,10 +137,31 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             }
             
             // Get environment from arguments (default to sandbox)
-            val environment = args?.get("environment") as? String ?: "sandbox"
-            val revolutEnvironment = if (environment == "production") RevolutPaymentsSDK.Environment.PRODUCTION else RevolutPaymentsSDK.Environment.SANDBOX
+            val environmentRaw = (args?.get("environment") as? String)?.trim()
+            val normalizedEnvironment = environmentRaw?.lowercase()
+            val resolvedEnvironment = when (normalizedEnvironment) {
+                "production", "prod", "live", "main" -> "production"
+                "sandbox", "test", "testing", "dev", "development", null -> "sandbox"
+                else -> {
+                    logToDart("WARNING", "Unknown environment '$environmentRaw', defaulting to sandbox")
+                    "sandbox"
+                }
+            }
+            val revolutEnvironment = if (resolvedEnvironment == "production") {
+                RevolutPaymentsSDK.Environment.PRODUCTION
+            } else {
+                RevolutPaymentsSDK.Environment.SANDBOX
+            }
+
+            currentMerchantPublicKey = merchantPublicKey
+            currentEnvironment = revolutEnvironment
+            currentEnvironmentLabel = resolvedEnvironment
             
-            logToDart("INFO", "Initializing Revolut Pay SDK with merchant public key: $merchantPublicKey, environment: $environment")
+            logToDart(
+                "INFO",
+                "Initializing Revolut Pay SDK with merchant     public key: $merchantPublicKey, " +
+                    "environmentArg=${environmentRaw ?: "null"} resolved=$resolvedEnvironment"
+            )
             
             // Configure the SDK according to official documentation
             RevolutPaymentsSDK.configure(
@@ -145,6 +170,8 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
                     environment = revolutEnvironment
                 )
             )
+
+            logCurrentConfiguration("handleInitialize")
             
             logToDart("INFO", "SDK configuration applied - testing functionality...")
             
@@ -153,6 +180,12 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             
             isInitialized = true
             
+            logToDart(
+                "INFO",
+                "Revolut Pay SDK initialization complete | environment=$resolvedEnvironment " +
+                    "(sdk=${revolutEnvironment.name}) | merchantKey=${maskMerchantKey(merchantPublicKey)}"
+            )
+
             logToDart("SUCCESS", "Revolut Pay SDK initialized successfully with merchant key: $merchantPublicKey")
             result.success(true)
         } catch (e: Exception) {
@@ -240,6 +273,8 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             // Generate the view ID first
             val viewId = nextViewId
             nextViewId += 1
+
+            logCurrentConfiguration("handleCreateRevolutPayButton(viewId=$viewId)")
             
             // Create the actual Revolut Pay button using the SDK
             val button = createRevolutPayButton(
@@ -343,6 +378,8 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             
             // Generate a unique view ID for this button
             val viewId = nextViewId++
+
+            logCurrentConfiguration("handleProvideButton(viewId=$viewId)")
             
             // Create the actual Revolut Pay button with all the payment data
             val button = createRevolutPayButton(
@@ -709,6 +746,27 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             android.util.Log.w("RevolutSdkBridge", "[$level] $message", e)
         }
     }
+
+    private fun maskMerchantKey(key: String?): String {
+        if (key.isNullOrBlank()) return "UNSET"
+        if (key.length <= 6) return "****${key.takeLast(2)}"
+        val prefix = key.take(4)
+        val suffix = key.takeLast(4)
+        return "$prefix...$suffix (len=${key.length})"
+    }
+
+    private fun logCurrentConfiguration(origin: String) {
+        val envLabel = currentEnvironmentLabel?.lowercase() ?: "unset"
+        val sdkEnv = currentEnvironment?.name ?: "UNKNOWN"
+        val maskedKey = maskMerchantKey(currentMerchantPublicKey)
+        val message = "$origin | environment=$envLabel (sdk=$sdkEnv) | merchantKey=$maskedKey"
+        android.util.Log.i(TAG, message)
+        logToDart("INFO", message)
+    }
+
+    fun publishCurrentConfiguration(origin: String) {
+        logCurrentConfiguration(origin)
+    }
     
     // Public method for platform view to access logging
     fun logToDartPublic(level: String, message: String) {
@@ -812,6 +870,7 @@ class RevolutPayButtonView(
 
         plugin.buttonViewInstances[viewId] = this
         android.util.Log.d(TAG, ">>> INIT: View instance stored, starting controller initialization...")
+        plugin.publishCurrentConfiguration("RevolutPayButtonView.init(viewId=$viewId)")
         
         initializeController()
         
@@ -857,6 +916,7 @@ class RevolutPayButtonView(
 
     private fun handleButtonClick() {
         android.util.Log.i(TAG, "🟢 >>> handleButtonClick: START - orderToken=$orderToken")
+        plugin.publishCurrentConfiguration("handleButtonClick(viewId=$viewId)")
         
         // Prevent multiple simultaneous payment attempts
         if (isPaymentInProgress) {
@@ -886,6 +946,7 @@ class RevolutPayButtonView(
 
     private fun startPayment() {
         android.util.Log.i(TAG, "🚀 >>> startPayment: START")
+        plugin.publishCurrentConfiguration("startPayment(viewId=$viewId)")
         
         val controller = paymentController
         val token = orderToken
@@ -1009,6 +1070,7 @@ class RevolutPayButtonView(
 
     private fun initializeController() {
         android.util.Log.i(TAG, "🎯 >>> initializeController: START")
+        plugin.publishCurrentConfiguration("initializeController(viewId=$viewId)")
         
         // Prevent duplicate controller initialization
         if (paymentController != null) {
