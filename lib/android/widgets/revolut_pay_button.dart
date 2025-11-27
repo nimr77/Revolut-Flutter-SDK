@@ -141,42 +141,32 @@ class RevolutPayPromoBanner extends StatefulWidget {
 
 class _RevolutPayButtonState extends State<RevolutPayButton> {
   static const String _viewType = 'revolut_pay_button';
+  static const MethodChannel _bridgeChannel = MethodChannel('revolut_sdk_bridge');
 
   String? _buttonId;
+  Map<String, dynamic>? _buttonConfig;
   bool _isButtonCreated = false;
   bool _isLoading = true;
   String? _errorMessage;
   MethodChannel? _paymentChannel;
 
   @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return _buildLoadingState();
-    }
-
-    if (_errorMessage != null) {
-      return _buildErrorState();
-    }
-
-    if (!_isButtonCreated) {
-      return _buildErrorState();
-    }
-
-    return _buildButton();
+  void initState() {
+    super.initState();
+    _createButton();
   }
 
   @override
   void didUpdateWidget(RevolutPayButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // If critical parameters changed, rebuild the widget
-    // The AndroidView will be recreated automatically
     if (oldWidget.orderToken != widget.orderToken ||
         oldWidget.amount != widget.amount ||
         oldWidget.currency != widget.currency ||
-        oldWidget.email != widget.email) {
-      // Widget will rebuild and create new platform view
-      setState(() {});
+        oldWidget.email != widget.email ||
+        oldWidget.shouldRequestShipping != widget.shouldRequestShipping ||
+        oldWidget.savePaymentMethodForMerchant != widget.savePaymentMethodForMerchant ||
+        oldWidget.returnURL != widget.returnURL) {
+      _createButton();
     }
   }
 
@@ -187,15 +177,128 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _isButtonCreated = true;
-    _isLoading = false;
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+    if (_errorMessage != null || !_isButtonCreated || _buttonConfig == null) {
+      return _buildErrorState();
+    }
+    return _buildButton();
   }
 
-  /// Builds the actual button widget
+  Future<void> _createButton() async {
+    final orderToken = widget.orderToken;
+    final amount = widget.amount;
+    final currency = widget.currency;
+    final email = widget.email;
+
+    if (orderToken == null || amount == null || currency == null || email == null) {
+      const message = 'Missing required button parameters';
+      setState(() {
+        _isLoading = false;
+        _isButtonCreated = false;
+        _buttonConfig = null;
+        _buttonId = null;
+        _errorMessage = message;
+      });
+      widget.onError?.call(message);
+      return;
+    }
+
+    _paymentChannel?.setMethodCallHandler(null);
+    _paymentChannel = null;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _isButtonCreated = false;
+      _buttonConfig = null;
+      _buttonId = null;
+    });
+
+    try {
+      final args = <String, dynamic>{
+        'orderToken': orderToken,
+        'amount': amount,
+        'currency': currency,
+        'email': email,
+        'shouldRequestShipping': widget.shouldRequestShipping,
+        'savePaymentMethodForMerchant': widget.savePaymentMethodForMerchant,
+        'returnURL': widget.returnURL ?? 'revolut-sdk-bridge://revolut-pay',
+        'merchantName': widget.merchantName,
+        'merchantLogoURL': widget.merchantLogoURL,
+        'additionalData': widget.additionalData,
+      };
+
+      final dynamic result = await _bridgeChannel.invokeMethod('createRevolutPayButton', args);
+
+      if (!mounted) {
+        return;
+      }
+
+      if (result == null) {
+        throw PlatformException(code: 'NULL_RESULT', message: 'Native response was null');
+      }
+
+      if (result is! Map) {
+        throw PlatformException(
+          code: 'INVALID_RESULT',
+          message: 'Unexpected native result type: ${result.runtimeType}',
+        );
+      }
+
+      final config = _normalizeNativeMap(Map<dynamic, dynamic>.from(result));
+
+      if (config['buttonCreated'] != true) {
+        final message = config['message'] as String? ?? 'Failed to create Revolut Pay button';
+        throw PlatformException(code: 'BUTTON_CREATION_FAILED', message: message);
+      }
+
+      setState(() {
+        _buttonConfig = config;
+        _buttonId = config['viewId']?.toString();
+        _isButtonCreated = true;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } on PlatformException catch (e) {
+      final message = e.message ?? e.code;
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _errorMessage = message;
+        _isLoading = false;
+        _isButtonCreated = false;
+        _buttonConfig = null;
+        _buttonId = null;
+      });
+      widget.onError?.call(message);
+    } catch (e) {
+      final message = e.toString();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _errorMessage = message;
+        _isLoading = false;
+        _isButtonCreated = false;
+        _buttonConfig = null;
+        _buttonId = null;
+      });
+      widget.onError?.call(message);
+    }
+  }
+
   Widget _buildButton() {
     final buttonParamsMap = (widget.buttonParams ?? const ButtonParamsData()).toMap();
+
+    final creationParams = <String, dynamic>{
+      ...?_buttonConfig,
+      'buttonParams': buttonParamsMap,
+      'buttonId': _buttonConfig?['viewId'] ?? _buttonId,
+    };
 
     return Container(
       width: widget.width ?? double.infinity,
@@ -205,30 +308,16 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
       child: SizedBox(
         height: widget.height,
         child: AndroidView(
-          key: ValueKey('revolut_button_${widget.orderToken}_${widget.amount}_${widget.currency}'),
+          key: ValueKey('revolut_button_${_buttonId ?? widget.orderToken}_${widget.amount}_${widget.currency}'),
           viewType: _viewType,
           onPlatformViewCreated: _onPlatformViewCreated,
-          creationParams: {
-            'buttonParams': buttonParamsMap,
-            'orderToken': widget.orderToken,
-            'buttonId': _buttonId,
-            'amount': widget.amount,
-            'currency': widget.currency,
-            'email': widget.email,
-            'shouldRequestShipping': widget.shouldRequestShipping,
-            'savePaymentMethodForMerchant': widget.savePaymentMethodForMerchant,
-            'returnURL': widget.returnURL ?? 'myapp://payment-return',
-            'merchantName': widget.merchantName,
-            'merchantLogoURL': widget.merchantLogoURL,
-            'additionalData': widget.additionalData,
-          },
+          creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
         ),
       ),
     );
   }
 
-  /// Builds the error state widget
   Widget _buildErrorState() {
     return Container(
       width: widget.width,
@@ -242,16 +331,17 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
             border: Border.all(color: Colors.red),
           ),
       child: Center(
-        child: Text(
-          _errorMessage ?? 'Button creation failed',
-          style: TextStyle(color: Colors.red[800], fontSize: 12.0),
+        child: SelectableText.rich(
+          TextSpan(
+            text: _errorMessage ?? 'Button creation failed',
+            style: TextStyle(color: Colors.red[800], fontSize: 12.0),
+          ),
           textAlign: TextAlign.center,
         ),
       ),
     );
   }
 
-  /// Builds the loading state widget
   Widget _buildLoadingState() {
     return Container(
       width: widget.width,
@@ -264,13 +354,10 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     );
   }
 
-  /// Callback when the platform view is created
   void _onPlatformViewCreated(int id) {
-    // Set up payment channel for this specific button instance
     _paymentChannel = MethodChannel('revolut_pay_button_payment_$id');
     _paymentChannel!.setMethodCallHandler(_handlePaymentChannelCall);
 
-    // Platform view is ready, button has been created natively
     if (mounted) {
       setState(() {
         _isButtonCreated = true;
@@ -280,37 +367,48 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
     }
   }
 
-  /// Handles payment result messages from the native side
   Future<void> _handlePaymentChannelCall(MethodCall call) async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     switch (call.method) {
       case 'onPaymentResult':
         final args = call.arguments as Map<dynamic, dynamic>?;
-        if (args == null) return;
+        if (args == null) {
+          return;
+        }
 
-        final success = args['success'] as bool? ?? false;
-        final message = args['message'] as String? ?? '';
-        final error = args['error'] as String? ?? '';
-        final resultData = Map<String, dynamic>.from(args);
+        final resultData = _normalizeNativeMap(args);
+        final success = resultData['success'] as bool? ?? false;
+        final message = resultData['message'] as String? ?? '';
+        final error = resultData['error'] as String? ?? '';
 
         if (success) {
           widget.onPaymentSuccess?.call(resultData);
-        } else {
-          // Check if it was cancelled by user
-          if (error == 'user_abandoned_payment' ||
-              message.toLowerCase().contains('abandoned') ||
-              message.toLowerCase().contains('cancelled')) {
-            widget.onPaymentCancelled?.call();
-          } else {
-            widget.onPaymentError?.call(error.isNotEmpty ? error : message, resultData);
-          }
+          _createButton();
+          return;
         }
-        break;
 
+        final failureMessage = error.isNotEmpty ? error : message;
+
+        if (error == 'user_abandoned_payment' ||
+            message.toLowerCase().contains('abandoned') ||
+            message.toLowerCase().contains('cancelled')) {
+          widget.onPaymentCancelled?.call();
+        }
+
+        widget.onError?.call(failureMessage);
+        widget.onPaymentError?.call(failureMessage, resultData);
+
+        break;
       default:
         break;
     }
+  }
+
+  Map<String, dynamic> _normalizeNativeMap(Map<dynamic, dynamic> source) {
+    return source.map((key, value) => MapEntry(key.toString(), value));
   }
 }
 

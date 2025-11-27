@@ -6,6 +6,9 @@ import android.net.Uri
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.annotation.NonNull
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -21,8 +24,8 @@ import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
 import com.revolut.payments.RevolutPaymentsSDK
 import com.revolut.revolutpay.api.PaymentResult
+import com.revolut.revolutpay.api.PaymentState
 import com.revolut.revolutpay.api.RevolutPaymentController
-import com.revolut.revolutpay.api.bindPaymentState
 import com.revolut.revolutpay.api.button.BoxText
 import com.revolut.revolutpay.api.button.BoxTextCurrency
 import com.revolut.revolutpay.api.button.ButtonParams
@@ -32,6 +35,9 @@ import com.revolut.revolutpay.api.button.Variant
 import com.revolut.revolutpay.api.button.VariantModes
 import com.revolut.revolutpay.api.order.OrderParams
 import com.revolut.revolutpay.api.revolutPay
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     companion object {
@@ -299,6 +305,7 @@ class RevolutSdkBridgePlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             val buttonConfig = mapOf(
                 "buttonCreated" to true,
                 "viewId" to viewId,
+                "buttonId" to viewId,
                 "orderToken" to orderToken,
                 "amount" to amount,
                 "currency" to currency,
@@ -838,6 +845,8 @@ class RevolutPayButtonView(
     private var componentActivity: ComponentActivity? = null
     private var revolutPayButton: com.revolut.revolutpay.api.RevolutPayButton? = null
     private var isPaymentInProgress: Boolean = false
+    private var lifecycleObserver: DefaultLifecycleObserver? = null
+    private var paymentStateJob: Job? = null
 
     init {
         android.util.Log.i(TAG, "═══════════════════════════════════════")
@@ -927,6 +936,7 @@ class RevolutPayButtonView(
         
         isPaymentInProgress = true
         android.util.Log.d(TAG, ">>> handleButtonClick: Payment in progress flag set to TRUE")
+        revolutPayButton?.showBlockingLoading(true)
         
         plugin.logToDartPublic("INFO", "Processing button click, order token: $orderToken")
         
@@ -1108,6 +1118,10 @@ class RevolutPayButtonView(
         android.util.Log.w(TAG, "✅✅✅ >>> initializeController: Activity IS ComponentActivity!")
 
         componentActivity = activity
+
+        lifecycleObserver?.let { existing ->
+            activity.lifecycle.removeObserver(existing)
+        }
         
         android.util.Log.d(TAG, ">>> initializeController: Creating payment controller...")
         try {
@@ -1121,17 +1135,57 @@ class RevolutPayButtonView(
             return
         }
 
-        android.util.Log.d(TAG, ">>> initializeController: Attempting to bind payment state...")
-        paymentController?.let { controller ->
-            revolutPayButton?.let { button ->
-                try {
-                    button.bindPaymentState(controller, activity)
-                    android.util.Log.w(TAG, "✅ >>> initializeController: Payment state bound successfully")
-                } catch (e: Exception) {
-                    android.util.Log.w(TAG, "⚠️ >>> initializeController: Failed to bind payment state: ${e.message}")
+        val observer = object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                val state = paymentController?.paymentState?.value
+                val isProcessingState = state is PaymentState.Processing
+                android.util.Log.d(
+                    TAG,
+                    ">>> Lifecycle onResume(viewId=$viewId) | paymentState=${state?.javaClass?.simpleName ?: "null"} | processing=$isProcessingState"
+                )
+
+                if (!isProcessingState) {
+                    if (isPaymentInProgress) {
+                        android.util.Log.d(TAG, ">>> Lifecycle onResume: resetting payment progress flag")
+                    }
+                    isPaymentInProgress = false
+                    revolutPayButton?.showBlockingLoading(false)
                 }
-            } ?: android.util.Log.w(TAG, "⚠️ >>> initializeController: Button is null, cannot bind")
-        } ?: android.util.Log.w(TAG, "⚠️ >>> initializeController: Controller is null, cannot bind")
+            }
+
+            override fun onDestroy(owner: LifecycleOwner) {
+                owner.lifecycle.removeObserver(this)
+                if (lifecycleObserver === this) {
+                    lifecycleObserver = null
+                }
+            }
+        }
+        activity.lifecycle.addObserver(observer)
+        lifecycleObserver = observer
+
+        android.util.Log.d(TAG, ">>> initializeController: Subscribing to payment state updates...")
+        val controller = paymentController
+        val button = revolutPayButton
+        if (controller == null || button == null) {
+            android.util.Log.w(TAG, "⚠️ >>> initializeController: Missing controller ($controller) or button ($button), skipping state subscription")
+        } else {
+            paymentStateJob?.cancel()
+            paymentStateJob = activity.lifecycleScope.launch {
+                controller.paymentState.collectLatest { state ->
+                    val isProcessingState = state is PaymentState.Processing
+                    val shouldShowLoading = isPaymentInProgress && isProcessingState
+                    android.util.Log.d(
+                        TAG,
+                        ">>> paymentState update(viewId=$viewId): ${state.javaClass.simpleName} | inProgress=$isPaymentInProgress | showLoading=$shouldShowLoading"
+                    )
+                    if (!isProcessingState && isPaymentInProgress) {
+                        android.util.Log.d(TAG, ">>> paymentState update: state not processing, resetting progress flag")
+                        isPaymentInProgress = false
+                    }
+                    revolutPayButton?.showBlockingLoading(shouldShowLoading)
+                }
+            }
+        }
         
         android.util.Log.i(TAG, "🎯 >>> initializeController: END")
     }
@@ -1197,6 +1251,14 @@ class RevolutPayButtonView(
 
     override fun dispose() {
         paymentChannel.setMethodCallHandler(null)
+        lifecycleObserver?.let { observer ->
+            componentActivity?.lifecycle?.removeObserver(observer)
+        }
+        lifecycleObserver = null
+        paymentStateJob?.cancel()
+        paymentStateJob = null
+        isPaymentInProgress = false
+        revolutPayButton?.showBlockingLoading(false)
         paymentController = null
         revolutPayButton = null
         componentActivity = null
