@@ -41,7 +41,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <!-- Add your custom scheme here for Revolut SDK -->
-                <data android:scheme="myapp" android:host="payment-return" />
+                <data android:scheme="revolut-sdk-bridge" android:host="revolut-pay" />
             </intent-filter>
         </activity>
 
@@ -62,8 +62,7 @@
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
-
-        <!-- Query for Revolut app for deep linking - correct package name from documentation -->
+        <!-- Allow Revolut SDK to detect the Revolut app -->
         <package android:name="com.revolut.revolut" />
     </queries>
 </manifest>
