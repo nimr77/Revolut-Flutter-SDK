@@ -12,8 +12,45 @@ class RevolutPayButton extends StatefulWidget {
   /// Order token for payment processing
   final String? orderToken;
 
+  /// Payment amount in minor units (e.g., 1000 for £10.00)
+  final int? amount;
+
+  /// Payment currency (e.g., 'GBP', 'EUR', 'USD')
+  final String? currency;
+
+  /// Customer email address
+  final String? email;
+
+  /// Whether to request shipping information
+  final bool shouldRequestShipping;
+
+  /// Whether to save payment method for merchant
+  final bool savePaymentMethodForMerchant;
+
+  /// Return URL for payment completion
+  final String? returnURL;
+
+  /// Merchant name to display
+  final String? merchantName;
+
+  /// Merchant logo URL
+  final String? merchantLogoURL;
+
+  /// Additional data for the payment
+  final Map<String, dynamic>? additionalData;
+
   /// Callback when button is clicked
+  /// Note: The native button handles clicks directly and triggers the payment flow.
   final VoidCallback? onPressed;
+
+  /// Callback when payment succeeds
+  final Function(Map<String, dynamic> result)? onPaymentSuccess;
+
+  /// Callback when payment fails
+  final Function(String error, Map<String, dynamic>? details)? onPaymentError;
+
+  /// Callback when payment is cancelled by user
+  final Function()? onPaymentCancelled;
 
   /// Callback when button creation fails
   final Function(String error)? onError;
@@ -40,7 +77,19 @@ class RevolutPayButton extends StatefulWidget {
     super.key,
     this.buttonParams,
     this.orderToken,
+    this.amount,
+    this.currency,
+    this.email,
+    this.shouldRequestShipping = false,
+    this.savePaymentMethodForMerchant = false,
+    this.returnURL,
+    this.merchantName,
+    this.merchantLogoURL,
+    this.additionalData,
     this.onPressed,
+    this.onPaymentSuccess,
+    this.onPaymentError,
+    this.onPaymentCancelled,
     this.onError,
     this.width,
     this.height,
@@ -89,84 +138,53 @@ class RevolutPayPromoBanner extends StatefulWidget {
 }
 
 class _RevolutPayButtonState extends State<RevolutPayButton> {
-  static const MethodChannel _channel = MethodChannel('revolut_sdk_bridge');
   static const String _viewType = 'revolut_pay_button';
-
-  String? _buttonId;
-  bool _isButtonCreated = false;
-  bool _isLoading = true;
-  String? _errorMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return _buildLoadingState();
-    }
-
-    if (_errorMessage != null) {
-      return _buildErrorState();
-    }
-
-    if (!_isButtonCreated) {
-      return _buildErrorState();
-    }
-
-    return _buildButton();
-  }
-
-  @override
-  void didUpdateWidget(RevolutPayButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Recreate button if parameters changed
-    if (oldWidget.buttonParams != widget.buttonParams) {
-      _createButton();
-    }
-
-    // Update order token if changed
-    if (oldWidget.orderToken != widget.orderToken &&
-        widget.orderToken != null) {
-      _setOrderToken(widget.orderToken!);
-    }
-  }
+  MethodChannel? _paymentChannel;
 
   @override
   void dispose() {
-    // Clean up any resources if needed
+    _paymentChannel?.setMethodCallHandler(null);
     super.dispose();
   }
 
   @override
-  void initState() {
-    super.initState();
-    _createButton();
-  }
+  Widget build(BuildContext context) {
+    if (widget.orderToken == null || widget.amount == null || widget.currency == null) {
+      return _buildErrorState('Missing required parameters (orderToken, amount, currency)');
+    }
 
-  /// Builds the actual button widget
-  Widget _buildButton() {
+    final buttonParamsMap = (widget.buttonParams ?? const ButtonParamsData()).toMap();
+
+    final creationParams = <String, dynamic>{
+      'buttonParams': buttonParamsMap,
+      'orderToken': widget.orderToken,
+      'amount': widget.amount,
+      'currency': widget.currency,
+      'email': widget.email,
+      'shouldRequestShipping': widget.shouldRequestShipping,
+      'savePaymentMethodForMerchant': widget.savePaymentMethodForMerchant,
+      'returnURL': widget.returnURL ?? 'revolut-sdk-bridge://revolut-pay',
+      'merchantName': widget.merchantName,
+      'merchantLogoURL': widget.merchantLogoURL,
+      'additionalData': widget.additionalData,
+    };
+
     return Container(
-      width: widget.width,
-      height: widget.height,
+      width: widget.width ?? double.infinity,
+      height: widget.height ?? 60.0, // Default height for Revolut button
       margin: widget.margin,
       padding: widget.padding,
       decoration: widget.decoration,
-      child: GestureDetector(
-        onTap: widget.enabled ? _handleButtonPress : null,
-        child: AndroidView(
-          viewType: _viewType,
-          onPlatformViewCreated: _onPlatformViewCreated,
-          creationParams: {
-            'buttonParams': widget.buttonParams?.toMap(),
-            'orderToken': widget.orderToken,
-          },
-          creationParamsCodec: const StandardMessageCodec(),
-        ),
+      child: AndroidView(
+        viewType: _viewType,
+        onPlatformViewCreated: _onPlatformViewCreated,
+        creationParams: creationParams,
+        creationParamsCodec: const StandardMessageCodec(),
       ),
     );
   }
 
-  /// Builds the error state widget
-  Widget _buildErrorState() {
+  Widget _buildErrorState(String message) {
     return Container(
       width: widget.width,
       height: widget.height ?? 48.0,
@@ -179,171 +197,82 @@ class _RevolutPayButtonState extends State<RevolutPayButton> {
             border: Border.all(color: Colors.red),
           ),
       child: Center(
-        child: Text(
-          _errorMessage ?? 'Button creation failed',
-          style: TextStyle(color: Colors.red[800], fontSize: 12.0),
+        child: SelectableText.rich(
+          TextSpan(
+            text: message,
+            style: TextStyle(color: Colors.red[800], fontSize: 12.0),
+          ),
           textAlign: TextAlign.center,
         ),
       ),
     );
   }
 
-  /// Builds the loading state widget
-  Widget _buildLoadingState() {
-    return Container(
-      width: widget.width,
-      height: widget.height ?? 48.0,
-      margin: widget.margin,
-      decoration:
-          widget.decoration ??
-          BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-      child: const Center(
-        child: SizedBox(
-          width: 20.0,
-          height: 20.0,
-          child: CircularProgressIndicator(strokeWidth: 2.0),
-        ),
-      ),
-    );
+  void _onPlatformViewCreated(int id) {
+    _paymentChannel = MethodChannel('revolut_pay_button_payment_$id');
+    _paymentChannel!.setMethodCallHandler(_handlePaymentChannelCall);
   }
 
-  /// Creates the Revolut Pay button through the native platform
-  Future<void> _createButton() async {
+  Future<void> _handlePaymentChannelCall(MethodCall call) async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    switch (call.method) {
+      case 'onPaymentResult':
+        final args = call.arguments as Map<dynamic, dynamic>?;
+        if (args == null) return;
 
-    try {
-      final result = await _channel.invokeMethod('provideButton', {
-        'buttonParams': widget.buttonParams?.toMap(),
-      });
+        final resultData = _normalizeNativeMap(args);
+        final success = resultData['success'] as bool? ?? false;
+        final message = resultData['message'] as String? ?? '';
+        final error = resultData['error'] as String? ?? '';
 
-      if (result is Map) {
-        final buttonCreated = result['success'] as bool? ?? false;
-        if (buttonCreated) {
-          _buttonId = result['buttonId'] as String?;
-          _isButtonCreated = true;
-
-          // Set order token if available
-          // if (widget.orderToken != null) {
-          //   await _setOrderToken(widget.orderToken!);
-          // }
-        } else {
-          throw Exception('Failed to create button');
+        if (success) {
+          widget.onPaymentSuccess?.call(resultData);
+          return;
         }
-      } else {
-        throw Exception('Invalid response from native side');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isButtonCreated = false;
-        });
-        widget.onError?.call(e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+
+        final failureMessage = error.isNotEmpty ? error : message;
+
+        if (error == 'user_abandoned_payment' ||
+            message.toLowerCase().contains('abandoned') ||
+            message.toLowerCase().contains('cancelled')) {
+          widget.onPaymentCancelled?.call();
+        } else {
+          widget.onError?.call(failureMessage);
+          widget.onPaymentError?.call(failureMessage, resultData);
+        }
+        break;
     }
   }
 
-  /// Handles button press events
-  void _handleButtonPress() {
-    if (!_isButtonCreated || !widget.enabled) return;
-
-    widget.onPressed?.call();
-  }
-
-  /// Callback when the platform view is created
-  void _onPlatformViewCreated(int id) {
-    // Platform view is ready
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// Sets the order token for the button
-  Future<void> _setOrderToken(String orderToken) async {
-    if (_buttonId == null) return;
-
-    try {
-      await _channel.invokeMethod('setOrderToken', {
-        'buttonId': _buttonId,
-        'orderToken': orderToken,
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Failed to set order token: ${e.toString()}';
-        });
-        widget.onError?.call(_errorMessage!);
-      }
-    }
+  Map<String, dynamic> _normalizeNativeMap(Map<dynamic, dynamic> source) {
+    return source.map((key, value) => MapEntry(key.toString(), value));
   }
 }
 
 class _RevolutPayPromoBannerState extends State<RevolutPayPromoBanner> {
-  static const MethodChannel _channel = MethodChannel('revolut_sdk_bridge');
-
-  String? _bannerId;
-  bool _isBannerCreated = false;
-  bool _isLoading = true;
-  String? _errorMessage;
+  static const String _viewType = 'revolut_pay_promo_banner';
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return _buildLoadingState();
+    if (widget.promoParams == null) {
+      return _buildErrorState('Missing promoParams');
     }
 
-    if (_errorMessage != null || !_isBannerCreated) {
-      return _buildErrorState();
-    }
+    final creationParams = <String, dynamic>{'promoParams': widget.promoParams!.toMap(), 'themeId': widget.themeId};
 
-    return _buildBanner();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _createBanner();
-  }
-
-  /// Builds the actual banner widget
-  Widget _buildBanner() {
-    // For now, return a placeholder since promotional banners
-    // would need additional native implementation
-    return Container(
-      width: widget.width,
-      height: widget.height ?? 80.0,
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(8.0),
-        border: Border.all(color: Colors.blue),
-      ),
-      child: const Center(
-        child: Text(
-          'Revolut Pay Promotional Banner',
-          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-        ),
+    return SizedBox(
+      width: widget.width ?? double.infinity,
+      height: widget.height ?? 80.0, // Estimated height for banner
+      child: AndroidView(
+        viewType: _viewType,
+        creationParams: creationParams,
+        creationParamsCodec: const StandardMessageCodec(),
       ),
     );
   }
 
-  /// Builds the error state widget
-  Widget _buildErrorState() {
+  Widget _buildErrorState(String message) {
     return Container(
       width: widget.width,
       height: widget.height ?? 80.0,
@@ -354,73 +283,11 @@ class _RevolutPayPromoBannerState extends State<RevolutPayPromoBanner> {
       ),
       child: Center(
         child: Text(
-          _errorMessage ?? 'Banner creation failed',
+          message,
           style: TextStyle(color: Colors.orange[800], fontSize: 12.0),
           textAlign: TextAlign.center,
         ),
       ),
     );
-  }
-
-  /// Builds the loading state widget
-  Widget _buildLoadingState() {
-    return Container(
-      width: widget.width,
-      height: widget.height ?? 80.0,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: const Center(
-        child: SizedBox(
-          width: 20.0,
-          height: 20.0,
-          child: CircularProgressIndicator(strokeWidth: 2.0),
-        ),
-      ),
-    );
-  }
-
-  /// Creates the promotional banner through the native platform
-  Future<void> _createBanner() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await _channel.invokeMethod(
-        'providePromotionalBannerWidget',
-        {'promoParams': widget.promoParams?.toMap(), 'themeId': widget.themeId},
-      );
-
-      if (result is Map<String, dynamic>) {
-        final bannerCreated = result['bannerCreated'] as bool? ?? false;
-        if (bannerCreated) {
-          _bannerId = result['bannerId'] as String?;
-          _isBannerCreated = true;
-        } else {
-          throw Exception('Failed to create promotional banner');
-        }
-      } else {
-        throw Exception('Invalid response from native side');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isBannerCreated = false;
-        });
-        widget.onError?.call(e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 }

@@ -45,10 +45,6 @@ repositories {
 }
 
 dependencies {
-    // Revolut Pay SDK dependencies - correct version from documentation
-    implementation("com.revolut:revolutpayments:1.0.0")
-    implementation("com.revolut:revolutpay:2.8")
-    
     // Android lifecycle dependencies
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-common-java8:2.7.0")
