@@ -76,15 +76,25 @@ class CrossPlatformRevolutPayButton extends StatelessWidget {
       return android.RevolutPayButton(
         buttonParams: buttonParams,
         orderToken: orderToken,
+        amount: amount,
+        currency: currency,
+        email: email,
+        shouldRequestShipping: shouldRequestShipping,
+        savePaymentMethodForMerchant: savePaymentMethodForMerchant,
+        returnURL: returnURL,
+        merchantName: merchantName,
+        merchantLogoURL: merchantLogoURL,
+        additionalData: additionalData,
         onPressed: onPressed,
+        onPaymentSuccess: onPaymentResult,
+        onPaymentError: (error, details) => onPaymentError?.call(error),
+        onPaymentCancelled: onPaymentCancelled,
         onError: onError,
         width: width,
         height: height,
         margin: margin,
         padding: padding,
-        decoration: borderRadius != null
-            ? BoxDecoration(borderRadius: borderRadius)
-            : null,
+        decoration: borderRadius != null ? BoxDecoration(borderRadius: borderRadius) : null,
       );
     } else if (Platform.isIOS) {
       // Use iOS implementation
@@ -129,10 +139,7 @@ class CrossPlatformRevolutPayButton extends StatelessWidget {
         width: width,
         margin: margin,
         padding: padding ?? const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-          borderRadius: borderRadius ?? BorderRadius.circular(8),
-        ),
+        decoration: BoxDecoration(color: Colors.grey[300], borderRadius: borderRadius ?? BorderRadius.circular(8)),
         child: const Center(
           child: Text(
             'Revolut Pay Button\n(Platform not supported)',
@@ -174,8 +181,7 @@ class CrossPlatformRevolutPayPromoBanner extends StatelessWidget {
         width: width,
         height: height,
         onInteraction: onInteraction != null
-            ? (bannerId, interactionType) =>
-                  onInteraction!(bannerId, interactionType)
+            ? (bannerId, interactionType) => onInteraction!(bannerId, interactionType)
             : null,
         onError: onError,
       );
@@ -193,11 +199,7 @@ class CrossPlatformRevolutPayPromoBanner extends StatelessWidget {
           child: Text(
             'Promotional Banners\n(Not supported on iOS)',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.orange,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
           ),
         ),
       );
@@ -220,9 +222,7 @@ class RevolutSdkBridge {
   bool get isEventChannelReady {
     if (isAndroid) {
       try {
-        final methodChannel = android.RevolutSdkBridgeMethodChannel(
-          android.RevolutCallbacks(),
-        );
+        final methodChannel = android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks());
         return methodChannel.isEventChannelReady;
       } catch (e) {
         debugPrint('Failed to check event channel status: $e');
@@ -285,9 +285,7 @@ class RevolutSdkBridge {
         ).continueConfirmationFlow(controllerId: controllerId);
       } else if (isIOS) {
         // iOS implementation
-        return await ios.RevolutSdkBridgeIos.continueConfirmationFlowIos(
-          controllerId: controllerId,
-        );
+        return await ios.RevolutSdkBridgeIos.continueConfirmationFlowIos(controllerId: controllerId);
       } else {
         throw UnsupportedError('Platform not supported');
       }
@@ -304,9 +302,7 @@ class RevolutSdkBridge {
     try {
       if (isAndroid) {
         // Android implementation
-        final result = await android.RevolutSdkBridgeMethodChannel(
-          android.RevolutCallbacks(),
-        ).createController();
+        final result = await android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks()).createController();
         return result.toMap();
       } else if (isIOS) {
         // iOS implementation
@@ -353,11 +349,7 @@ class RevolutSdkBridge {
           android.RevolutCallbacks(),
         ).provideButton(buttonParams: buttonParams?.toMap());
 
-        return {
-          'buttonId': result.buttonId,
-          'success': result.success,
-          'platform': 'android',
-        };
+        return {'buttonId': result.buttonId, 'success': result.success, 'platform': 'android'};
       } else if (isIOS) {
         // iOS implementation
         return await ios.RevolutSdkBridgeIos.createRevolutPayButtonIos(
@@ -385,19 +377,13 @@ class RevolutSdkBridge {
   ///
   /// [promoParams] - Promotional banner parameters
   /// [themeId] - Theme ID for the banner
-  Future<BannerResultData?> createPromotionalBanner({
-    PromoBannerParamsData? promoParams,
-    String? themeId,
-  }) async {
+  Future<BannerResultData?> createPromotionalBanner({PromoBannerParamsData? promoParams, String? themeId}) async {
     try {
       if (isAndroid) {
         // Android implementation
         return await android.RevolutSdkBridgeMethodChannel(
           android.RevolutCallbacks(),
-        ).providePromotionalBannerWidget(
-          promoParams: promoParams?.toMap(),
-          themeId: themeId,
-        );
+        ).providePromotionalBannerWidget(promoParams: promoParams?.toMap(), themeId: themeId);
       } else if (isIOS) {
         // iOS doesn't support promotional banners
         throw UnsupportedError('Promotional banners not supported on iOS');
@@ -415,6 +401,10 @@ class RevolutSdkBridge {
   /// [controllerId] - ID of the controller to dispose
   ///
   /// Returns true if successful
+  ///
+  ///
+  ///
+
   Future<bool> disposeController({required String controllerId}) async {
     try {
       if (isAndroid) {
@@ -424,9 +414,7 @@ class RevolutSdkBridge {
         ).disposeController(controllerId: controllerId);
       } else if (isIOS) {
         // iOS implementation
-        return await ios.RevolutSdkBridgeIos.disposeControllerIos(
-          controllerId: controllerId,
-        );
+        return await ios.RevolutSdkBridgeIos.disposeControllerIos(controllerId: controllerId);
       } else {
         throw UnsupportedError('Platform not supported');
       }
@@ -441,9 +429,7 @@ class RevolutSdkBridge {
     try {
       if (isAndroid) {
         // Android implementation
-        return await android.RevolutSdkBridgeMethodChannel(
-          android.RevolutCallbacks(),
-        ).getPlatformVersion();
+        return await android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks()).getPlatformVersion();
       } else if (isIOS) {
         // iOS implementation
         final result = await ios.RevolutSdkBridgeIos.getPlatformVersionIos();
@@ -495,13 +481,11 @@ class RevolutSdkBridge {
   /// Get SDK version information
   ///
   /// Returns a Map with SDK version details
-  Future<Map<String, dynamic>?> getSdkVersion() async {
+  Future<Map<Object?, dynamic>?> getSdkVersion() async {
     try {
       if (isAndroid) {
         // Android implementation
-        return await android.RevolutSdkBridgeMethodChannel(
-          android.RevolutCallbacks(),
-        ).getSdkVersion();
+        return await android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks()).getSdkVersion();
       } else if (isIOS) {
         // iOS implementation
         return await ios.RevolutSdkBridgeIos.getSdkVersionIos();
@@ -521,40 +505,22 @@ class RevolutSdkBridge {
   /// [returnUri] - Return URI for payment completion (Android only)
   /// [requestShipping] - Whether to request shipping information (Android only)
   /// [customer] - Customer data (Android only)
-  Future<bool> initialize({
-    required String merchantPublicKey,
-    String? environment,
-    String? returnUri,
-    bool requestShipping = false,
-    CustomerData? customer,
-  }) async {
+  Future<bool> initialize({required String merchantPublicKey, String? environment}) async {
     try {
       if (isAndroid) {
         // Android implementation
-        final androidEnv = environment == 'main'
-            ? RevolutEnvironment.main
-            : RevolutEnvironment.sandbox;
+        final androidEnv = _resolveAndroidEnvironment(environment);
 
         // Wait for event channel to be ready
         final eventChannelReady = await waitForEventChannel();
         if (!eventChannelReady) {
-          debugPrint(
-            'Warning: Event channel not ready, but continuing with initialization',
-          );
+          debugPrint('Warning: Event channel not ready, but continuing with initialization');
         }
 
         // Create the method channel and proceed with initialization
-        final methodChannel = android.RevolutSdkBridgeMethodChannel(
-          android.RevolutCallbacks(),
-        );
+        final methodChannel = android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks());
 
-        return await methodChannel.init(
-          environment: androidEnv.value,
-          returnUri: returnUri ?? 'revolut://payment-return',
-          merchantPublicKey: merchantPublicKey,
-          requestShipping: requestShipping,
-          customer: customer?.toMap(),
-        );
+        return await methodChannel.init(environment: androidEnv.value, merchantPublicKey: merchantPublicKey);
       } else if (isIOS) {
         // iOS implementation
         return await ios.RevolutSdkBridgeIos.initializeIos(
@@ -574,19 +540,13 @@ class RevolutSdkBridge {
   ///
   /// [orderToken] - Order token for payment processing
   /// [savePaymentMethodForMerchant] - Whether to save payment method
-  Future<bool> processPayment({
-    required String orderToken,
-    bool savePaymentMethodForMerchant = false,
-  }) async {
+  Future<bool> processPayment({required String orderToken, bool savePaymentMethodForMerchant = false}) async {
     try {
       if (isAndroid) {
         // Android implementation
         return await android.RevolutSdkBridgeMethodChannel(
           android.RevolutCallbacks(),
-        ).pay(
-          orderToken: orderToken,
-          savePaymentMethodForMerchant: savePaymentMethodForMerchant,
-        );
+        ).pay(orderToken: orderToken, savePaymentMethodForMerchant: savePaymentMethodForMerchant);
       } else if (isIOS) {
         // iOS implementation
         final result = await ios.RevolutSdkBridgeIos.payIos(
@@ -616,13 +576,9 @@ class RevolutSdkBridge {
     try {
       if (isAndroid) {
         // Android implementation
-        final result =
-            await android.RevolutSdkBridgeMethodChannel(
-              android.RevolutCallbacks(),
-            ).providePromotionalBannerWidget(
-              promoParams: promoParams,
-              themeId: themeId,
-            );
+        final result = await android.RevolutSdkBridgeMethodChannel(
+          android.RevolutCallbacks(),
+        ).providePromotionalBannerWidget(promoParams: promoParams, themeId: themeId);
         return result.toMap();
       } else if (isIOS) {
         // iOS implementation
@@ -645,10 +601,7 @@ class RevolutSdkBridge {
   /// [controllerId] - ID of the controller to update
   ///
   /// Returns true if successful
-  Future<bool> setOrderToken({
-    required String orderToken,
-    required String controllerId,
-  }) async {
+  Future<bool> setOrderToken({required String orderToken, required String controllerId}) async {
     try {
       if (isAndroid) {
         // Android implementation
@@ -657,10 +610,7 @@ class RevolutSdkBridge {
         ).setOrderToken(orderToken: orderToken, controllerId: controllerId);
       } else if (isIOS) {
         // iOS implementation
-        return await ios.RevolutSdkBridgeIos.setOrderTokenIos(
-          orderToken: orderToken,
-          controllerId: controllerId,
-        );
+        return await ios.RevolutSdkBridgeIos.setOrderTokenIos(orderToken: orderToken, controllerId: controllerId);
       } else {
         throw UnsupportedError('Platform not supported');
       }
@@ -683,9 +633,7 @@ class RevolutSdkBridge {
     try {
       if (isAndroid) {
         // Android implementation
-        return await android.RevolutSdkBridgeMethodChannel(
-          android.RevolutCallbacks(),
-        ).setSavePaymentMethodForMerchant(
+        return await android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks()).setSavePaymentMethodForMerchant(
           savePaymentMethodForMerchant: savePaymentMethodForMerchant,
           controllerId: controllerId,
         );
@@ -708,9 +656,7 @@ class RevolutSdkBridge {
   Future<bool> setupEventChannel() async {
     if (isAndroid) {
       try {
-        final methodChannel = android.RevolutSdkBridgeMethodChannel(
-          android.RevolutCallbacks(),
-        );
+        final methodChannel = android.RevolutSdkBridgeMethodChannel(android.RevolutCallbacks());
         methodChannel.ensureEventChannelReady();
         return methodChannel.isEventChannelReady;
       } catch (e) {
@@ -736,9 +682,7 @@ class RevolutSdkBridge {
         while (!isEventChannelReady && attempts < maxAttempts) {
           await Future.delayed(Duration(milliseconds: delayMs));
           attempts++;
-          debugPrint(
-            'Waiting for event channel... attempt $attempts/$maxAttempts',
-          );
+          debugPrint('Waiting for event channel... attempt $attempts/$maxAttempts');
         }
 
         return isEventChannelReady;
@@ -748,5 +692,26 @@ class RevolutSdkBridge {
       }
     }
     return true; // iOS doesn't need event channel
+  }
+
+  RevolutEnvironment _resolveAndroidEnvironment(String? environment) {
+    final normalized = environment?.trim().toLowerCase();
+    switch (normalized) {
+      case 'production':
+      case 'prod':
+      case 'live':
+      case 'main':
+        return RevolutEnvironment.main;
+      case 'sandbox':
+      case 'test':
+      case 'testing':
+      case 'dev':
+      case 'development':
+      case null:
+        return RevolutEnvironment.sandbox;
+      default:
+        debugPrint('Unknown environment "$environment", defaulting to sandbox.');
+        return RevolutEnvironment.sandbox;
+    }
   }
 }
